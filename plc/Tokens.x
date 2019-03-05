@@ -50,6 +50,9 @@ $white+       ;
   \{             { tok (\p s -> TokenLBlock p) }
   \}             { tok (\p s -> TokenRBlock p) }
   
+  //TODO: decide whether to add string, var, let, argument, functions ?
+
+  
   $alpha [$alpha $digit \_ \’]*   { tok (\p s -> TokenVar p s) }  
 
 {
