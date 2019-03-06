@@ -1,5 +1,5 @@
 { 
-module ToyTokens where 
+module Tokens where 
 }
 
 %wrapper "posn" 
@@ -29,11 +29,11 @@ $white+       ;
   \<             { tok (\p s -> TokenLessThan p) }
   \>             { tok (\p s -> TokenMoreThan p) }
   \+             { tok (\p s -> TokenPlus p) }
-  \*             { tok (\p s -> TokenMultiply p) }
-  
   \-             { tok (\p s -> TokenMinus p) }
+  \*             { tok (\p s -> TokenMultiply p) }
+
   =              { tok (\p s -> TokenEq p ) }
-  \\             { tok (\p s -> TokenLambda p) }
+
 
 
   if             { tok (\p s -> TokenIf p) }
@@ -41,6 +41,7 @@ $white+       ;
   
   for            { tok (\p s -> TokenFor p) }  
   in             { tok (\p s -> TokenIn p ) }
+  \\             { tok (\p s -> TokenLambda p) }
 
 
   \(             { tok (\p s -> TokenLParen p) }
@@ -49,8 +50,6 @@ $white+       ;
   \]             { tok (\p s -> TokenRArray p) }
   \{             { tok (\p s -> TokenLBlock p) }
   \}             { tok (\p s -> TokenRBlock p) }
-  
-  //TODO: decide whether to add string, var, let, argument, functions ?
 
   
   $alpha [$alpha $digit \_ \’]*   { tok (\p s -> TokenVar p s) }  
@@ -133,7 +132,4 @@ tokenPosn (TokenRParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenVar (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 
-/**
-*TODO: include more tokenPosn here
-*/ 
 }
