@@ -1,8 +1,13 @@
+<string>
+<int>
+<float>
 $n
 int
 bool
-(float)
-stream
+float
+true
+false
+list
 if
 then
 else
@@ -16,12 +21,19 @@ in
 *
 {
 }
+[
+]
 (
 )
 +=
 -=
 *=
 /=
+++
+<
+>
+<=
+>=
 
 
 Problem 1:

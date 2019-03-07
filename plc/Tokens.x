@@ -9,99 +9,89 @@ $alpha = [a-zA-Z]
 -- alphabetic characters
 
 tokens :-
-$white+       ; 
-  "--".*        ; 
-  $digit+        { tok (\p s -> TokenInt p (read s)) }
-  "->"             { tok (\p s -> TokenTypeArr p) }
-  \:             { tok (\p s -> TokenHasType p) }
-  let            { tok (\p s -> TokenLet p ) }
-  then           { tok (\p s -> TokenThen p) }
-
-  bool           { tok (\p s -> TokenTypeBool p) } 
-  true           { tok (\p s -> TokenTrue p) }
-  false          { tok (\p s -> TokenFalse p) }
-
-  function       { tok (\p s -> TokenTypeFunction p) }
-
-  stream         { tok (\p s -> TokenTypeStream p) } 
-  int            { tok (\p s -> TokenTypeInt p) }
-  
-  \<             { tok (\p s -> TokenLessThan p) }
-  \>             { tok (\p s -> TokenMoreThan p) }
-  \+             { tok (\p s -> TokenPlus p) }
-  \-             { tok (\p s -> TokenMinus p) }
-  \*             { tok (\p s -> TokenMultiply p) }
-
-  =              { tok (\p s -> TokenEq p ) }
-
-
-
-  if             { tok (\p s -> TokenIf p) }
-  else           { tok (\p s -> TokenElse p) }
-  
-  for            { tok (\p s -> TokenFor p) }  
-  in             { tok (\p s -> TokenIn p ) }
-  \\             { tok (\p s -> TokenLambda p) }
-
-
-  \(             { tok (\p s -> TokenLParen p) }
-  \)             { tok (\p s -> TokenRParen p) }
-  \[             { tok (\p s -> TokenLArray p) }
-  \]             { tok (\p s -> TokenRArray p) }
-  \{             { tok (\p s -> TokenLBlock p) }
-  \}             { tok (\p s -> TokenRBlock p) }
-
-  
-  $alpha [$alpha $digit \_ \’]*   { tok (\p s -> TokenVar p s) }  
+  $white+                       ; 
+  "--".*                        ; 
+  $digit+ \. $digit+            {\p s -> T p (TokenFloat (read s))}
+  $digit+                       {\p s -> T p (TokenInt (read s))}
+  $alpha [$alpha $digit \_ \’]* {\p s -> T p (TokenVar s)}
+  \$ $digit+                    {\p s -> T p (TokenIdent (read s))}
+  "int"                         {\p s -> T p TokenTypeInt}
+  "bool"                        {\p s -> T p TokenTypeBool}
+  "list"                        {\p s -> T p TokenTypeList}
+  "float"                       {\p s -> T p TokenTypeFloat}
+  "true"                        {\p s -> T p TokenTrue}
+  "false"                       {\p s -> T p TokenFalse}
+  "if"                          {\p s -> T p TokenIf}
+  "then"                        {\p s -> T p TokenThen}
+  "else"                        {\p s -> T p TokenElse}
+  "for"                         {\p s -> T p TokenFor}
+  "in"                          {\p s -> T p TokenIn}
+  "+="                          {\p s -> T p TokenPlusEquals}
+  "-="                          {\p s -> T p TokenMinusEquals}
+  "*="                          {\p s -> T p TokenMultEquals}
+  "/="                          {\p s -> T p TokenDivEquals}
+  "<="                          {\p s -> T p TokenLessEquals} 
+  ">="                          {\p s -> T p TokenGreaterEquals}
+  "++"                          {\p s -> T p TokenIncrement}
+  "--"                          {\p s -> T p TokenDecrement}
+  \;                            {\p s -> T p TokenEOL}
+  \+                            {\p s -> T p TokenPlus}
+  \-                            {\p s -> T p TokenMinus}
+  \=                            {\p s -> T p TokenEq}
+  \*                            {\p s -> T p TokenMult}
+  \/                            {\p s -> T p TokenDiv}
+  \<                            {\p s -> T p TokenLess}
+  \>                            {\p s -> T p TokenGreater}
+  \(                            {\p s -> T p TokenLParen}
+  \)                            {\p s -> T p TokenRParen}
+  \{                            {\p s -> T p TokenLParenCurly}
+  \}                            {\p s -> T p TokenRParenCurly}
+  \[                            {\p s -> T p TokenLParenSquare}
+  \]                            {\p s -> T p TokenRParenSquare}
 
 {
--- Each action has type :: AlexPosn -> String -> MDLToken 
-
--- Helper function
-tok f p s = f p s
+-- Each action has type :: AlexPosn -> String -> Token 
 
 -- The token type: 
-data Token = 
-  TokenHasType AlexPosn          |
-  TokenVar AlexPosn String       |
-
-  TokenTypeBool AlexPosn         |
-  TokenTypeStream AlexPosn       |
-  TokenTypeInt  AlexPosn         | 
-  
-  
-  TokenInt AlexPosn Int          |
-  TokenStream AlexPosn String    |
-  TokenTrue AlexPosn             |
-  TokenFalse AlexPosn            |
-
-  TokenLessThan AlexPosn         |
-  TokenMoreThan AlexPosn         |
-  TokenPlus AlexPosn             |
-  TokenMinus AlexPosn            |
-  TokenMultiply AlexPosn         |
-
-  TokenEq AlexPosn               |
-  TokenLambda AlexPosn           |
-
-
-  TokenIf AlexPosn               |
-  TokenElse AlexPosn             |
-
-  TokenFor AlexPosn              |
-  TokenIn AlexPosn               |
-  
-
-  TokenLParen AlexPosn           |
-  TokenRParen AlexPosn           |
-  TokenLParen AlexPosn           |
-  TokenRParen AlexPosn           |
-  TokenLArray AlexPosn           |
-  TokenRArray AlexPosn           |
-  TokenLBlock AlexPosn           |
-  TokenRBlock AlexPosn           |
-
-  TokenVar AlexPosn String  
+data Token = T AlexPosn TToken
+data TToken = 
+  TokenIdent Int |
+  TokenInt Int |
+  TokenFloat Float |
+  TokenVar String |
+  TokenTypeInt |
+  TokenTypeBool |
+  TokenTypeFloat |
+  TokenTypeList |
+  TokenTrue | 
+  TokenFalse |
+  TokenIf |
+  TokenThen |
+  TokenElse |
+  TokenFor |
+  TokenIn |
+  TokenEOL |
+  TokenPlus |
+  TokenMinus |
+  TokenEq |
+  TokenMult |
+  TokenDiv |
+  TokenLParen |
+  TokenRParen |
+  TokenLParenCurly |
+  TokenRParenCurly |
+  TokenLParenSquare |
+  TokenRParenSquare |
+  TokenPlusEquals |
+  TokenMinusEquals |
+  TokenMultEquals |
+  TokenDivEquals |
+  TokenIncrement |
+  TokenDecrement |
+  TokenLessEquals |
+  TokenGreaterEquals |
+  TokenLess |
+  TokenGreater |
   deriving (Eq,Show)
 
 tokenPosn :: ToyToken -> String
