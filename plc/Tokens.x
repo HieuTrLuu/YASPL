@@ -1,20 +1,19 @@
-{ 
-module Tokens where 
+{
+module Tokens where
 }
 
-%wrapper "posn" 
-$digit = 0-9     
--- digits 
-$alpha = [a-zA-Z]    
+%wrapper "posn"
+$digit = 0-9
+-- digits
+$alpha = [a-zA-Z]
 -- alphabetic characters
 
 tokens :-
-  $white+                       ; 
-  "--".*                        ; 
+  $white+                       ;
+  "--".*                        ;
   $digit+ \. $digit+            {\p s -> T p (TokenFloat (read s))}
   $digit+                       {\p s -> T p (TokenInt (read s))}
-  $alpha [$alpha $digit \_ \’]* {\p s -> T p (TokenVar s)}
-  \$ $digit+                    {\p s -> T p (TokenIdent (read s))}
+  \$ $digit+                    {\p s -> T p (TokenIdent (read (tail s)))}
   "int"                         {\p s -> T p TokenTypeInt}
   "bool"                        {\p s -> T p TokenTypeBool}
   "list"                        {\p s -> T p TokenTypeList}
@@ -26,11 +25,12 @@ tokens :-
   "else"                        {\p s -> T p TokenElse}
   "for"                         {\p s -> T p TokenFor}
   "in"                          {\p s -> T p TokenIn}
+  "print"                       {\p s -> T p TokenPrint}
   "+="                          {\p s -> T p TokenPlusEquals}
   "-="                          {\p s -> T p TokenMinusEquals}
   "*="                          {\p s -> T p TokenMultEquals}
   "/="                          {\p s -> T p TokenDivEquals}
-  "<="                          {\p s -> T p TokenLessEquals} 
+  "<="                          {\p s -> T p TokenLessEquals}
   ">="                          {\p s -> T p TokenGreaterEquals}
   "++"                          {\p s -> T p TokenIncrement}
   "--"                          {\p s -> T p TokenDecrement}
@@ -48,13 +48,14 @@ tokens :-
   \}                            {\p s -> T p TokenRParenCurly}
   \[                            {\p s -> T p TokenLParenSquare}
   \]                            {\p s -> T p TokenRParenSquare}
+  $alpha [$alpha $digit \_ \’]* {\p s -> T p (TokenVar s)}
 
 {
--- Each action has type :: AlexPosn -> String -> Token 
+-- Each action has type :: AlexPosn -> String -> Token
 
--- The token type: 
-data Token = T AlexPosn TToken
-data TToken = 
+-- The token type:
+data Token = T AlexPosn TToken deriving (Eq, Show)
+data TToken =
   TokenIdent Int |
   TokenInt Int |
   TokenFloat Float |
@@ -63,7 +64,7 @@ data TToken =
   TokenTypeBool |
   TokenTypeFloat |
   TokenTypeList |
-  TokenTrue | 
+  TokenTrue |
   TokenFalse |
   TokenIf |
   TokenThen |
@@ -92,34 +93,7 @@ data TToken =
   TokenGreaterEquals |
   TokenLess |
   TokenGreater |
+  TokenPrint
   deriving (Eq,Show)
-
-tokenPosn :: ToyToken -> String
-tokenPosn (TokenHasType (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-
-tokenPosn (TokenTypeBool (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenTypeInt  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenTypeStream  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-
-tokenPosn (TokenTypeArr  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-
-tokenPosn (TokenInt  (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenTrue  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenFalse  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-
-tokenPosn (TokenLessThan  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenPlus  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-
-tokenPosn (TokenIf (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenElse (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-
-tokenPosn (TokenLambda (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-
-tokenPosn (TokenEq  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenIn  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenLParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenRParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenVar (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 
 }
