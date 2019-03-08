@@ -10,9 +10,12 @@ import Tokens
     var    { TokenVar _ $$ } 
     
     
-    int     { TokenInt _ $$ }
-    bool   { TokenTypeBool _ }
-    list     { TokenList _ $$ } 
+    Int     { TokenTypeInt _ }
+    Bool   { TokenTypeBool _ }
+    List     { TokenTypeList _ } 
+
+    int    { TokenInt _ $$ } 
+    list   { TokenList _ $$ } 
     float { TokenFloat _ $$ }
     true   { TokenTrue _ }
     false  { TokenFalse _ }
@@ -22,7 +25,7 @@ import Tokens
     then    { TokenThen _ }
     else    { TokenElse _ }
 
-    for     { TokemFor _ }
+    for     { TokenFor _ }
     in      { TokenIn _ }
 
     print   { TokenPrint _ }
@@ -35,12 +38,12 @@ import Tokens
     ">="                          { TokenGreaterEquals _ }
     "++"                         { TokenIncrement _ }
     "--"                          { TokenDecrement _ }
-    ';'                          { TokenEOF _ }
+    ';'                          { TokenEOL _ }
   
     '+'    { TokenPlus _ }
     '-'    { TokenMinus _ }
-    '='    { TokenEqual _ }
-    '*'    { TokenMul _ }
+    '='    { TokenEq _ }
+    '*'    { TokenMult _ }
     '/'    { TokenDiv _ }
     '>'    { TokenLess _ }
     '<'    { TokenGreater _ }
@@ -71,9 +74,9 @@ Exp : int                                       { TmInt $1 }
     | '(' Exp ')'                               { $2 }
     | print Exp                                 { TmPrint $1 }
 
-Type : bool                     { TyBool } 
-     | int                      { TyInt } 
-     | list                     { TyList }
+Type : Bool                     { TyBool } 
+     | Int                      { TyInt } 
+     | List                     { TyList }
 
 
 { 
