@@ -3,3 +3,8 @@ for a in $0 {
   print (a + acc);
   acc += a;
 }
+
+
+//conflict in the type system.
+int acc => strongly typed
+for a in $0 => a is dynamically typed, (loose typing)

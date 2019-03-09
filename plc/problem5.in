@@ -10,3 +10,6 @@ for a in $0 {
   acc++;
   print out;
 }
+
+//no token for stream.
+=> declare stream fib as list fib
