@@ -1,4 +1,7 @@
-print 0;
-for a in $0 {
-  print a;
+init{
+  out 0
+}
+
+0+{
+  out $0
 }

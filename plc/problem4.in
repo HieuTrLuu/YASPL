@@ -1,5 +1,8 @@
-int acc = 0;
-for a in $0 {
-  print (a + acc);
-  acc += a;
+init{
+  acc = 0
+}
+
+0+{
+  out ($0+acc)
+  acc += $0
 }
