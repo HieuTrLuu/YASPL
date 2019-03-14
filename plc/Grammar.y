@@ -62,13 +62,13 @@ Block : Statement Block             {$1:$2}
 Statement : return Expr             {Return $2}
           | Assignment              {Assign $1}
 
-Assignment : String '=' Expr        {Def $1 $3}
-           | String '+''=' Expr     {Inc $1 $4}
-           | String '-''=' Expr     {Dec $1 $4}
-           | String '*''=' Expr     {MultBy $1 $4}
-           | String '/''=' Expr     {DivBy $1 $4}
-           | String '+''+' Expr     {Inc $1 1}
-           | String '-''-' Expr     {Dec $1 1}
+Assignment : string '=' Expr        {Def $1 $3}
+           | string '+''=' Expr     {Inc $1 $4}
+           | string '-''=' Expr     {Dec $1 $4}
+           | string '*''=' Expr     {MultBy $1 $4}
+           | string '/''=' Expr     {DivBy $1 $4}
+           | string '+''+' Expr     {Inc $1 1}
+           | string '-''-' Expr     {Dec $1 1}
 
 Expr : int                          {Int_ $1}
      | float                        {Float_ $1}
@@ -93,7 +93,7 @@ Expr : int                          {Int_ $1}
      | Expr '<' '=' Expr            {LessEq $1 $4}
      | Expr '>' '=' Expr            {MoreEq $1 $4}
      | Expr '=' '=' Expr            {Equal $1 $4}
-     | string Args                  {Fun String $2}
+     | string Args                  {Fun $1 $2}
      | Expr '!' '!' Expr            {Index $1 $4}
      | '{' Expr '|' PredList '}'    {Comp $2 $4}
 
