@@ -38,18 +38,22 @@ import Tokens
     '!'    { TokenExclamation _ }
     ','    { TokenComma }
 
-%left lam
-%nonassoc if
-%nonassoc else
-%left APP
-%left '<'
-%left '+'
-%nonassoc int true false var '(' ')'
+%right lam
+%left if then else
+%nonassoc '>' '<'
+%right ':'
+%left '+' '-'
+%left '*' '/'
+%left '%'
+%right '^'
+%nonassoc '(' ')'
+%nonassoc '{' '}'
+%nonassoc '[' ']'
+%nonassoc string int float true false return ident
 
 %%
 Prog : {- empty -}                  {[]}
      | Sect Prog                    {$1:$2}
-     | Sect                         {[$1]}
 
 Sect : int '+' '{' Block '}'        {((show $1) ++"+", $4)}
      | int '-' int '{' Block '}'    {((show $1) ++ "-" ++ (show $3), $5)}
@@ -74,6 +78,7 @@ Expr : int                          {Int_ $1}
      | float                        {Float_ $1}
      | true                         {True}
      | false                        {False}
+     | string                       {Var $1}
      | '[' Conts ']'                {List $2}
      | '(' Expr ',' Expr ')'        {Pair $2 $4}
      | ident                        {Ident $1}
@@ -98,11 +103,9 @@ Expr : int                          {Int_ $1}
      | '{' Expr '|' PredList '}'    {Comp $2 $4}
 
 Conts : {- empty -}                 {[]}
-      | Expr                        {[$1]}
       | Expr ',' Conts              {$1:$3}
 
 Args : {- empty -}                  {[]}
-     | Expr                         {[$1]}
      | Expr Args                    {$1:$2}
 
 PredList : Pred                     {[$1]}
@@ -132,7 +135,7 @@ data Expr = Int_ Int | Float_ Float | True | False | List [Expr] | Pair Expr Exp
           | Div Expr Expr | Mod Expr Expr | Cons Expr Expr | Append Expr Expr
           | If Expr Expr Expr | Lam String Expr | Less Expr Expr | More Expr Expr
           | LessEq Expr Expr | MoreEq Expr Expr | Equal Expr Expr | Fun String [Expr]
-          | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr
+          | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr | Var String
           deriving (Show,Eq)
 
 data Pred = Member Expr Expr | Prop Expr

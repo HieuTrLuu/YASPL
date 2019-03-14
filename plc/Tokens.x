@@ -20,6 +20,17 @@ tokens :-
   "then"                        {\p s -> T p TokenThen}
   "else"                        {\p s -> T p TokenElse}
   "return"                      {\p s -> T p TokenReturn}
+  "++"                          {\p s -> T p TokenDoubleAdd}
+  "--"                          {\p s -> T p TokenDoubleSub}
+  "=="                          {\p s -> T p TokenDoubleEqual}
+  "+="                          {\p s -> T p TokenAddEqual}
+  "-="                          {\p s -> T p TokenSubEqual}
+  "*="                          {\p s -> T p TokenMultEqual}
+  "/="                          {\p s -> T p TokenDivEqual}
+  "!!"                          {\p s -> T p TokenIndex}
+  "<-"                          {\p s -> T p TokenMember}
+  "<="                          {\p s -> T p TokenLessEqual}
+  ">="                          {\p s -> T p TokenMoreEqual}
   \\                            {\p s -> T p TokenLambda}
   \:                            {\p s -> T p TokenCons}
   \+                            {\p s -> T p TokenAdd}
@@ -37,7 +48,6 @@ tokens :-
   \}                            {\p s -> T p TokenRBlock}
   \[                            {\p s -> T p TokenLList}
   \]                            {\p s -> T p TokenRList}
-  \!                            {\p s -> T p TokenExclamation}
   \,                            {\p s -> T p TokenComma}
   \|                            {\p s -> T p TokenLine}
   $alpha [$alpha $digit \_ \’]* {\p s -> T p (TokenString s)}
