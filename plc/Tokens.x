@@ -10,45 +10,37 @@ $alpha = [a-zA-Z]
 
 tokens :-
   $white+                       ;
-  "--".*                        ;
+  "//".*                        ;
   $digit+ \. $digit+            {\p s -> T p (TokenFloat (read s))}
   $digit+                       {\p s -> T p (TokenInt (read s))}
   \$ $digit+                    {\p s -> T p (TokenIdent (read (tail s)))}
-  "int"                         {\p s -> T p TokenTypeInt}
-  "bool"                        {\p s -> T p TokenTypeBool}
-  "list"                        {\p s -> T p TokenTypeList}
-  "float"                       {\p s -> T p TokenTypeFloat}
   "true"                        {\p s -> T p TokenTrue}
   "false"                       {\p s -> T p TokenFalse}
   "if"                          {\p s -> T p TokenIf}
   "then"                        {\p s -> T p TokenThen}
   "else"                        {\p s -> T p TokenElse}
-  "for"                         {\p s -> T p TokenFor}
-  "in"                          {\p s -> T p TokenIn}
-  "print"                       {\p s -> T p TokenPrint}
-  "+="                          {\p s -> T p TokenPlusEquals}
-  "-="                          {\p s -> T p TokenMinusEquals}
-  "*="                          {\p s -> T p TokenMultEquals}
-  "/="                          {\p s -> T p TokenDivEquals}
-  "<="                          {\p s -> T p TokenLessEquals}
-  ">="                          {\p s -> T p TokenGreaterEquals}
-  "++"                          {\p s -> T p TokenIncrement}
-  "--"                          {\p s -> T p TokenDecrement}
-  \;                            {\p s -> T p TokenEOL}
+  "return"                      {\p s -> T p TokenReturn}
+  \\                            {\p s -> T p TokenLambda}
+  \:                            {\p s -> T p TokenCons}
   \+                            {\p s -> T p TokenPlus}
   \-                            {\p s -> T p TokenMinus}
-  \=                            {\p s -> T p TokenEq}
+  \=                            {\p s -> T p TokenEqual}
   \*                            {\p s -> T p TokenMult}
   \/                            {\p s -> T p TokenDiv}
+  \%                            {\p s -> T p TokenMod}
+  \^                            {\p s -> T p TokenExponent}
   \<                            {\p s -> T p TokenLess}
-  \>                            {\p s -> T p TokenGreater}
+  \>                            {\p s -> T p TokenMore}
   \(                            {\p s -> T p TokenLParen}
   \)                            {\p s -> T p TokenRParen}
-  \{                            {\p s -> T p TokenLParenCurly}
-  \}                            {\p s -> T p TokenRParenCurly}
-  \[                            {\p s -> T p TokenLParenSquare}
-  \]                            {\p s -> T p TokenRParenSquare}
-  $alpha [$alpha $digit \_ \’]* {\p s -> T p (TokenVar s)}
+  \{                            {\p s -> T p TokenLBlock}
+  \}                            {\p s -> T p TokenRBlock}
+  \[                            {\p s -> T p TokenLList}
+  \]                            {\p s -> T p TokenRList}
+  \!                            {\p s -> T p TokenExclamation}
+  \,                            {\p s -> T p TokenComma}
+  \|                            {\p s -> T p TokenLine}
+  $alpha [$alpha $digit \_ \’]* {\p s -> T p (TokenString s)}
 
 {
 -- Each action has type :: AlexPosn -> String -> Token
@@ -56,44 +48,35 @@ tokens :-
 -- The token type:
 data Token = T AlexPosn TToken deriving (Eq, Show)
 data TToken =
-  TokenIdent Int |
-  TokenInt Int |
-  TokenFloat Float |
-  TokenVar String |
-  TokenTypeInt |
-  TokenTypeBool |
-  TokenTypeFloat |
-  TokenTypeList |
-  TokenTrue |
-  TokenFalse |
-  TokenIf |
-  TokenThen |
-  TokenElse |
-  TokenFor |
-  TokenIn |
-  TokenEOL |
-  TokenPlus |
-  TokenMinus |
-  TokenEq |
-  TokenMult |
-  TokenDiv |
-  TokenLParen |
-  TokenRParen |
-  TokenLParenCurly |
-  TokenRParenCurly |
-  TokenLParenSquare |
-  TokenRParenSquare |
-  TokenPlusEquals |
-  TokenMinusEquals |
-  TokenMultEquals |
-  TokenDivEquals |
-  TokenIncrement |
-  TokenDecrement |
-  TokenLessEquals |
-  TokenGreaterEquals |
-  TokenLess |
-  TokenGreater |
-  TokenPrint
-  deriving (Eq,Show)
+    TokenLambda |
+    TokenString String|
+    TokenIdent Int|
+    TokenInt Int|
+    TokenFloat Float|
+    TokenTrue |
+    TokenFalse |
+    TokenReturn |
+    TokenIf |
+    TokenThen |
+    TokenElse |
+    TokenCons |
+    TokenMore |
+    TokenLess |
+    TokenAdd |
+    TokenSub |
+    TokenMult |
+    TokenDiv |
+    TokenMod |
+    TokenExponent |
+    TokenEqual |
+    TokenLParen |
+    TokenRParen |
+    TokenLList |
+    TokenRList |
+    TokenLBlock |
+    TokenRBlock |
+    TokenLine |
+    TokenExclamation |
+    TokenComma
 
 }
