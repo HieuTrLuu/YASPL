@@ -22,8 +22,8 @@ tokens :-
   "return"                      {\p s -> T p TokenReturn}
   \\                            {\p s -> T p TokenLambda}
   \:                            {\p s -> T p TokenCons}
-  \+                            {\p s -> T p TokenPlus}
-  \-                            {\p s -> T p TokenMinus}
+  \+                            {\p s -> T p TokenAdd}
+  \-                            {\p s -> T p TokenSub}
   \=                            {\p s -> T p TokenEqual}
   \*                            {\p s -> T p TokenMult}
   \/                            {\p s -> T p TokenDiv}
