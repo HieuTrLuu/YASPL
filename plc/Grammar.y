@@ -18,7 +18,6 @@ import Tokens
     if     { TokenIf _ }
     then   { TokenThen _ }
     else   { TokenElse _ }
-
     ':'    { TokenCons _ }
     '>'    { TokenMore _ }
     '<'    { TokenLess _ }
@@ -48,7 +47,7 @@ import Tokens
 %nonassoc int true false var '(' ')'
 
 %%
-Prog : ;                            {[]}
+Prog : {- empty -}                  {[]}
      | Sect Prog                    {$1:$2}
      | Sect                         {[$1]}
 
@@ -98,11 +97,11 @@ Expr : int                          {Int_ $1}
      | Expr '!' '!' Expr            {Index $1 $4}
      | '{' Expr '|' PredList '}'    {Comp $2 $4}
 
-Conts : ;                           {[]}
+Conts : {- empty -}                 {[]}
       | Expr                        {[$1]}
       | Expr ',' Conts              {$1:$3}
 
-Args : ;                            {[]}
+Args : {- empty -}                  {[]}
      | Expr                         {[$1]}
      | Expr Args                    {$1:$2}
 
