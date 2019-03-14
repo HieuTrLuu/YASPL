@@ -78,5 +78,5 @@ data TToken =
     TokenLine |
     TokenExclamation |
     TokenComma
-
+	deriving (Eq, Show)
 }
