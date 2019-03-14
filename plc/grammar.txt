@@ -9,3 +9,34 @@ Expr :: Int | Float | True | False | [Conts] | (Conts) | $Nat | Expr + Expr |
         Expr >[=] Expr | Expr == Expr | String Args | Expr !! Expr | {Expr | Expr}
 Conts :: e | Expr | Expr, Conts
 Args :: e | Expr | Expr Args
+
+lam
+string
+ident
+int
+float
+true
+false
+return
+if
+then
+else
+
+'+'
+'-'
+'*'
+'/'
+'%'
+'='
+'<'
+'>'
+'('
+')'
+'['
+']'
+'{'
+'}'
+':'
+'|'
+'!'
+','

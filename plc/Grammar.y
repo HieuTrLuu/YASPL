@@ -3,49 +3,43 @@ module Grammar where
 import Tokens
 }
 
-%name parseCalc
+%name parseStreamLang
 %tokentype { Token }
 %error { parseError }
 %token
-    ':'    { TokenHasType _ }
-
-    var    { TokenVar _ $$ }
-    bool   { TokenTypeBool _ }
+    lam    { TokenLambda _ }
+    string { TokenString _ $$ }
+    ident  { TokenIdent _ $$ }
+    int    { TokenInt _ $$ }
+    float  { TokenFloat _ $$ }
     true   { TokenTrue _ }
     false  { TokenFalse _ }
+    return { TokenReturn _ }
+    if     { TokenIf _ }
+    then   { TokenThen _ }
+    else   { TokenElse _ }
 
-    stream     { TokenStream _ $$ }
-    int     { TokenInt _ $$ }
-
-    if      { TokenIf _ }
-    else    { TokenElse _ }
-
-    for     { TokemFor _ }
-    in      { TokenIn _ }
-
-    lam    { TokenLambda _ }
-
-
-    '>'    { TokenMoreThan _ }
-    '<'    { TokenLessThan _ }
-    '+'    { TokenPlus _ }
-    '-'    { TokenMinus _ }
-    '*'    { TokenMultiply _ }
-
+    ':'    { TokenCons _ }
+    '>'    { TokenMore _ }
+    '<'    { TokenLess _ }
+    '+'    { TokenAdd _ }
+    '-'    { TokenSub _ }
+    '*'    { TokenMult _ }
+    '/'    { TokenDiv _ }
+    '%'    { TokenMod _ }
+    '^'    { TokenExponent _ }
     '='    { TokenEqual _ }
-
-    ';'     { TokenSeq _ }
-    '('     { TokenLParen _ }
-    ')'     { TokenRParen _ }
-    '['     { TokenLArray _ }
-    ']'     { TokenRArray _ }
-    '{'     { TokenLBlock _ }
-    '}'     { TokenRBlock _ }
-
+    '('    { TokenLParen _ }
+    ')'    { TokenRParen _ }
+    '['    { TokenLList _ }
+    ']'    { TokenRList _ }
+    '{'    { TokenLBlock _ }
+    '}'    { TokenRBlock _ }
+    '|'    { TokenLine _ }
+    '!'    { TokenExclamation _ }
+    ','    { TokenComma }
 
 %left lam
-%right let
-%right in
 %nonassoc if
 %nonassoc else
 %left APP
@@ -58,9 +52,7 @@ Prog : ;                            {[]}
      | Sect Prog                    {$1:$2}
      | Sect                         {[$1]}
 
-Sect : start '{' Block '}'          {("start", $3)}
-     | end '{' Block '}'            {("end", $3)}
-     | int '+' '{' Block '}'        {((show $1) ++"+", $4)}
+Sect : int '+' '{' Block '}'        {((show $1) ++"+", $4)}
      | int '-' int '{' Block '}'    {((show $1) ++ "-" ++ (show $3), $5)}
      | int '{' Block '}'            {(show $1, $3)}
      | string '{' Block '}'         {($1, $3)}
@@ -90,6 +82,7 @@ Expr : int                          {Int_ $1}
      | Expr '-' Expr                {Sub $1 $3}
      | Expr '*' Expr                {Mult $1 $3}
      | Expr '/' Expr                {Div $1 $3}
+     | Expr '^' Expr                {Exponent $1 $3}
      | Expr '%' Expr                {Mod $1 $3}
      | Expr ':' Expr                {Cons $1 $3}
      | Expr '+''+' Expr             {Append $1 $4}
@@ -103,7 +96,7 @@ Expr : int                          {Int_ $1}
      | Expr '=' '=' Expr            {Equal $1 $4}
      | string Args                  {Fun String $2}
      | Expr '!' '!' Expr            {Index $1 $4}
-     | '{' Expr '|' Expr '}'        {Comp $2 $4}
+     | '{' Expr '|' PredList '}'    {Comp $2 $4}
 
 Conts : ;                           {[]}
       | Expr                        {[$1]}
@@ -112,6 +105,12 @@ Conts : ;                           {[]}
 Args : ;                            {[]}
      | Expr                         {[$1]}
      | Expr Args                    {$1:$2}
+
+PredList : Pred                     {[$1]}
+         | Pred ',' PredList        {$1:$2}
+
+Pred : string '<' '-' Expr          {Member $1 $4}
+     | Expr                         {Prop $1}
 
 {
 parseError :: [Token] -> a
@@ -134,6 +133,8 @@ data Expr = Int_ Int | Float_ Float | True | False | List [Expr] | Pair Expr Exp
           | Div Expr Expr | Mod Expr Expr | Cons Expr Expr | Append Expr Expr
           | If Expr Expr Expr | Lam String Expr | Less Expr Expr | More Expr Expr
           | LessEq Expr Expr | MoreEq Expr Expr | Equal Expr Expr | Fun String [Expr]
-          | Index Expr Expr | Comp Expr Expr
+          | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr
           deriving (Show,Eq)
+
+data Pred = Member Expr Expr | Prop Expr
 }
