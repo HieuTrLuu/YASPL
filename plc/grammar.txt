@@ -41,20 +41,42 @@ else
 '!'
 ','
 
-Prog [
+[
   ("start", [
-      Def "acc" (Int_ 0),
-      Def "fib" (List [(Int_ 1),(Int_ 1)]),
-      Def "seen" (List [])
+      Assign (Def "fib" (List [(Int_ 1),(Int_ 1)])),
+      Assign (Def "seen" (List []))
   ]),
   ("0-1", [
     Return (Ident 0),
-    Def "seen" (Cons seen (Ident 0))
+    Assign (Def "seen" (Cons (Var "seen") (Ident 0)))
   ]),
   ("2+", [
-    Def "seen" (Cons seen (Ident 0)),
-    Def "x" (App "zip" [seen, Fun "reverse" [fib]]),
-    Def "x" (Comp (Mult (Var "a") (Var "b")) (Member (Pair (Var "a") ("Var b")) (Var "x"))),
+    Assign (Def "seen" (Cons (Var "seen") (Ident 0))),
+    Assign (Def "x" (App (Var "zip") (App (Var "seen") (App (Var "reverse") (Var "fib"))))),
+    Assign (Def "x" (Comp (Mult (Var "a") (Var "b")) [Member (Pair (Var "a") (Var "b")) (Var "x")])),
+    Return (App (Var "sum") (Var "x")),
+    Assign (Def "a" (App (Var "last") (Var "fibs"))),
+    Assign (Def "b" (App (Var "head") (App (Var "tail") (App (Var "reverse") (Var "fib"))))),
+    Assign (Def "fib" (Cons (Var "fib") (Add (Var "a") (Var "b"))))
+  ])
+]
 
+[
+  ("start",[
+    Assign (Def "fib" (List [Int_ 1,Int_ 1])),
+    Assign (Def "seen" (List []))
+  ]),
+  ("0-1",[
+  Return [Ident 0],
+  Assign (Def "seen" (Cons (Var "seen") (Ident 0)))
+  ]),
+  ("2+",[
+  Assign (Def "seen" (Cons (Var "seen") (Ident 0))),
+  Assign (Def "x" (App (App (Var "zip") (Var "seen")) (App (Var "reverse") (Var "fib")))),
+  Assign (Def "x" (Comp (Mult (Var "a") (Var "b")) [Member (Pair (Var "a") (Var "b")) (Var "x")])),
+  Return [App (Var "sum") (Var "x")],
+  Assign (Def "a" (App (Var "last") (Var "fibs"))),
+  Assign (Def "b" (App (Var "head") (App (Var "tail") (App (Var "reverse") (Var "fib"))))),
+  Assign (Def "fib" (Cons (Var "fib") (Add (Var "a") (Var "b"))))
   ])
 ]
