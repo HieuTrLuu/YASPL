@@ -1,8 +1,8 @@
 Prog :: Sect Prog | Sect
 Sect :: start {Block} | end {Block} | Nat {Block} | Nat-Nat {Block} | Nat+ {Block} | String {Block}
-Block :: Stmnt\n Block | Stmnt;
-Stmnt :: Def | return Expr
-Def :: String [+|-|*|/]= Expr | String ++ | String --
+Block :: Statement\n Block | Statement
+Statement :: Assignment | return Expr
+Assignment :: String [+|-|*|/]= Expr | String ++ | String --
 Expr :: Int | Float | True | False | [Conts] | (Conts) | $Nat | Expr + Expr |
         Expr - Expr | Expr * Expr | Expr / Expr | Expr % Expr | Expr:Expr | Expr ++ Expr |
         (Expr) | if Expr then Expr else Expr | \String -> Expr | Expr <[=] Expr |
