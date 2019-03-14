@@ -7,51 +7,64 @@ import Tokens
 %tokentype { Token }
 %error { parseError }
 %token
-    lam    { TokenLambda _ }
-    string { TokenString _ $$ }
-    ident  { TokenIdent _ $$ }
-    int    { TokenInt _ $$ }
-    float  { TokenFloat _ $$ }
-    true   { TokenTrue _ }
-    false  { TokenFalse _ }
-    return { TokenReturn _ }
-    if     { TokenIf _ }
-    then   { TokenThen _ }
-    else   { TokenElse _ }
-	'++'   { TokenDoubleAdd _ }
-	'--'   { TokenDoubleSub _ }
-    ':'    { TokenCons _ }
-    '>'    { TokenMore _ }
-    '<'    { TokenLess _ }
-    '+'    { TokenAdd _ }
-    '-'    { TokenSub _ }
-    '*'    { TokenMult _ }
-    '/'    { TokenDiv _ }
-    '%'    { TokenMod _ }
-    '^'    { TokenExponent _ }
-    '='    { TokenEqual _ }
-    '('    { TokenLParen _ }
-    ')'    { TokenRParen _ }
-    '['    { TokenLList _ }
-    ']'    { TokenRList _ }
-    '{'    { TokenLBlock _ }
-    '}'    { TokenRBlock _ }
-    '|'    { TokenLine _ }
-    '!'    { TokenExclamation _ }
-    ','    { TokenComma }
+    lam    { T _ TokenLambda }
+    string { T _ (TokenString $$) }
+    ident  { T _ (TokenIdent $$) }
+    int    { T _ (TokenInt $$) }
+    float  { T _ (TokenFloat $$) }
+    true   { T _ TokenTrue }
+    false  { T _ TokenFalse  }
+    return { T _ TokenReturn  }
+    if     { T _ TokenIf  }
+    then   { T _ TokenThen  }
+    else   { T _ TokenElse  }
+    '++'   { T _ TokenDoubleAdd  }
+    '=='   { T _ TokenDoubleEqual  }
+    '!='   { T _ TokenNotEqual  }
+    '&&'   { T _ TokenAnd  }
+    '||'   { T _ TokenOr  }
+    '+='   { T _ TokenAddEqual  }
+    '-='   { T _ TokenSubEqual  }
+    '*='   { T _ TokenMultEqual  }
+    '/='   { T _ TokenDivEqual  }
+    '!!'   { T _ TokenIndex  }
+    '<-'   { T _ TokenMember  }
+    '->'   { T _ TokenArrow  }
+    '<='   { T _ TokenLessEqual  }
+    '>='   { T _ TokenMoreEqual  }
+    ':'    { T _ TokenCons  }
+    '>'    { T _ TokenMore  }
+    '<'    { T _ TokenLess  }
+    '+'    { T _ TokenAdd  }
+    '-'    { T _ TokenSub  }
+    '*'    { T _ TokenMult  }
+    '/'    { T _ TokenDiv  }
+    '%'    { T _ TokenMod  }
+    '^'    { T _ TokenExponent  }
+    '='    { T _ TokenEqual  }
+    '('    { T _ TokenLParen  }
+    ')'    { T _ TokenRParen  }
+    '['    { T _ TokenLList  }
+    ']'    { T _ TokenRList  }
+    '{'    { T _ TokenLBlock  }
+    '}'    { T _ TokenRBlock  }
+    '|'    { T _ TokenLine }
+    ','    { T _ TokenComma }
 
-%right lam
-%left if then else
-%nonassoc '>' '<'
+%nonassoc '>' '>=' '<' '<='
+%nonassoc '==' '!='
+%left '&&' '||'
+%left '++'
 %right ':'
+%nonassoc '+=' '-=' '*=' '/='
+%right '!!'
+%nonassoc '<-'
+%right '->'
+%nonassoc '='
 %left '+' '-'
 %left '*' '/'
 %left '%'
 %right '^'
-%nonassoc '(' ')'
-%nonassoc '{' '}'
-%nonassoc '[' ']'
-%nonassoc string int float true false return ident
 
 %%
 Prog : {- empty -}                  {[]}
@@ -69,17 +82,15 @@ Statement : return Expr             {Return $2}
           | Assignment              {Assign $1}
 
 Assignment : string '=' Expr        {Def $1 $3}
-           | string '+''=' Expr     {Inc $1 $4}
-           | string '-''=' Expr     {Dec $1 $4}
-           | string '*''=' Expr     {MultBy $1 $4}
-           | string '/''=' Expr     {DivBy $1 $4}
-           | string '+''+' Expr     {Inc $1 1}
-           | string '-''-' Expr     {Dec $1 1}
+           | string '+=' Expr     {Inc $1 $3}
+           | string '-=' Expr     {Dec $1 $3}
+           | string '*=' Expr     {MultVal $1 $3}
+           | string '/=' Expr     {DivVal $1 $3}
 
 Expr : int                          {Int_ $1}
      | float                        {Float_ $1}
-     | true                         {True}
-     | false                        {False}
+     | true                         {True_}
+     | false                        {False_}
      | string                       {Var $1}
      | '[' Conts ']'                {List $2}
      | '(' Expr ',' Expr ')'        {Pair $2 $4}
@@ -91,35 +102,37 @@ Expr : int                          {Int_ $1}
      | Expr '^' Expr                {Exponent $1 $3}
      | Expr '%' Expr                {Mod $1 $3}
      | Expr ':' Expr                {Cons $1 $3}
-     | Expr '+''+' Expr             {Append $1 $4}
+     | Expr '++' Expr             {Append $1 $3}
      | '(' Expr ')'                 {$2}
      | if Expr then Expr else Expr  {If $2 $4 $6}
-     | lam string '-' '>' Expr      {Lam $2 $5}
+     | lam string '->' Expr      {Lam $2 $4}
      | Expr '<' Expr                {Less $1 $3}
      | Expr '>' Expr                {More $1 $3}
-     | Expr '<' '=' Expr            {LessEq $1 $4}
-     | Expr '>' '=' Expr            {MoreEq $1 $4}
-     | Expr '=' '=' Expr            {Equal $1 $4}
+     | Expr '<=' Expr            {LessEq $1 $3}
+     | Expr '>=' Expr            {MoreEq $1 $3}
+     | Expr '==' Expr            {Equal $1 $3}
+     | Expr '!=' Expr            {NEqual $1 $3}
      | string Args                  {Fun $1 $2}
-     | Expr '!' '!' Expr            {Index $1 $4}
+     | Expr '!!' Expr            {Index $1 $3}
      | '{' Expr '|' PredList '}'    {Comp $2 $4}
 
 Conts : {- empty -}                 {[]}
       | Expr ',' Conts              {$1:$3}
+      | Expr                        {[$1]}
 
 Args : {- empty -}                  {[]}
      | Expr Args                    {$1:$2}
 
-PredList : Pred                     {[$1]}
-         | Pred ',' PredList        {$1:$2}
+PredList : Pred ',' PredList        {$1:$3}
+         | Pred                     {[$1]}
 
-Pred : string '<' '-' Expr          {Member $1 $4}
+Pred : Expr '<-' Expr          {Member $1 $3}
      | Expr                         {Prop $1}
 
 {
 parseError :: [Token] -> a
 parseError [] = error "Unknown Parse Error"
-parseError (t:ts) = error ("Parse error at line:column " ++ (tokenPosn t))
+parseError (t:ts) = let (l, c) = tokenPosn t in error ("Parse error at "++show l++":"++show c)
 
 type Prog = [Sect]
 
@@ -128,17 +141,21 @@ type Sect = (String, Block)
 type Block = [Statement]
 
 data Statement = Return Expr | Assign Assignment
+               deriving (Eq, Show)
 
 data Assignment = Def String Expr | Inc String Expr | Dec String Expr
                 | MultVal String Expr | DivVal String Expr
+                deriving (Eq, Show)
 
-data Expr = Int_ Int | Float_ Float | True | False | List [Expr] | Pair Expr Expr
+data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr Expr
           | Ident Int | Add Expr Expr | Sub Expr Expr | Mult Expr Expr
           | Div Expr Expr | Mod Expr Expr | Cons Expr Expr | Append Expr Expr
           | If Expr Expr Expr | Lam String Expr | Less Expr Expr | More Expr Expr
-          | LessEq Expr Expr | MoreEq Expr Expr | Equal Expr Expr | Fun String [Expr]
-          | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr | Var String
+          | LessEq Expr Expr | MoreEq Expr Expr | Equal Expr Expr | NEqual Expr Expr
+          | Fun String [Expr] | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr
+          | Var String
           deriving (Show,Eq)
 
 data Pred = Member Expr Expr | Prop Expr
+          deriving (Eq, Show)
 }

@@ -23,12 +23,15 @@ tokens :-
   "++"                          {\p s -> T p TokenDoubleAdd}
   "--"                          {\p s -> T p TokenDoubleSub}
   "=="                          {\p s -> T p TokenDoubleEqual}
+  "&&"                          {\p s -> T p TokenAnd}
+  "||"                          {\p s -> T p TokenOr}
   "+="                          {\p s -> T p TokenAddEqual}
   "-="                          {\p s -> T p TokenSubEqual}
   "*="                          {\p s -> T p TokenMultEqual}
   "/="                          {\p s -> T p TokenDivEqual}
   "!!"                          {\p s -> T p TokenIndex}
   "<-"                          {\p s -> T p TokenMember}
+  "->"                          {\p s -> T p TokenArrow}
   "<="                          {\p s -> T p TokenLessEqual}
   ">="                          {\p s -> T p TokenMoreEqual}
   \\                            {\p s -> T p TokenLambda}
@@ -86,21 +89,24 @@ data TToken =
     TokenLBlock |
     TokenRBlock |
     TokenLine |
-    TokenExclamation |
     TokenComma |
-	TokenDoubleAdd |
-	TokenDoubleSub |
-	TokenDoubleAdd |
-	TokenAddEqual |
-	TokenSubEqual |
-	TokenMultEqual |
-	TokenDivEqual |
-	TokenIndex |
-	TokenMember |
-	TokenLessEqual |
-	TokenMoreEqual
-	deriving (Eq, Show)
-	
+    TokenDoubleAdd |
+    TokenDoubleSub |
+    TokenDoubleEqual |
+    TokenNotEqual |
+    TokenAddEqual |
+    TokenSubEqual |
+    TokenMultEqual |
+    TokenDivEqual |
+    TokenIndex |
+    TokenMember |
+    TokenArrow |
+    TokenLessEqual |
+    TokenMoreEqual |
+    TokenAnd |
+    TokenOr
+    deriving (Eq, Show)
+
 tokenPosn :: Token -> (Int, Int)
-tokenPosn (T (AlexPn _ l c) _ = (l, c)
+tokenPosn (T (AlexPn _ l c) _) = (l, c)
 }
