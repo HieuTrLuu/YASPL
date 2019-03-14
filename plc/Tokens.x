@@ -53,6 +53,7 @@ tokens :-
   \]                            {\p s -> T p TokenRList}
   \,                            {\p s -> T p TokenComma}
   \|                            {\p s -> T p TokenLine}
+  \;                            {\p s -> T p TokenEOL}
   $alpha [$alpha $digit \_ \’]* {\p s -> T p (TokenString s)}
 
 {
@@ -104,7 +105,8 @@ data TToken =
     TokenLessEqual |
     TokenMoreEqual |
     TokenAnd |
-    TokenOr
+    TokenOr |
+    TokenEOL
     deriving (Eq, Show)
 
 tokenPosn :: Token -> (Int, Int)

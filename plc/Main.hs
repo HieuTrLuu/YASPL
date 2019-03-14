@@ -6,7 +6,10 @@ import Grammar
 main = do
      argsList <- getArgs
      f <- readFile (head argsList)
-     let t = (alexScanTokens f) in (let g = (parseStreamLang t) in (print g))
+     t <- pure (alexScanTokens f)
+     --print t
+     g <- pure (parseStreamLang t)
+     print g
 
 reformat :: [Token] -> [TToken]
 reformat [] = []

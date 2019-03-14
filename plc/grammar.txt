@@ -42,7 +42,7 @@ else
 ','
 
 Prog [
-  ("init", [
+  ("start", [
       Def "acc" (Int_ 0),
       Def "fib" (List [(Int_ 1),(Int_ 1)]),
       Def "seen" (List [])
@@ -53,8 +53,8 @@ Prog [
   ]),
   ("2+", [
     Def "seen" (Cons seen (Ident 0)),
-    Def "x" (Fun "zip" [seen, Fun "reverse" [fib]]),
+    Def "x" (App "zip" [seen, Fun "reverse" [fib]]),
     Def "x" (Comp (Mult (Var "a") (Var "b")) (Member (Pair (Var "a") ("Var b")) (Var "x"))),
-    
+
   ])
 ]

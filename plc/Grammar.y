@@ -50,6 +50,8 @@ import Tokens
     '}'    { T _ TokenRBlock  }
     '|'    { T _ TokenLine }
     ','    { T _ TokenComma }
+    EOL    { T _ TokenEOL }
+
 
 %nonassoc '>' '>=' '<' '<='
 %nonassoc '==' '!='
@@ -60,11 +62,19 @@ import Tokens
 %right '!!'
 %nonassoc '<-'
 %right '->'
-%nonassoc '='
+%left '='
 %left '+' '-'
 %left '*' '/'
 %left '%'
 %right '^'
+%left lam
+%nonassoc ','
+%nonassoc '|'
+%nonassoc return
+%nonassoc if then else
+%nonassoc '[' ']' '{' '}' '(' ')'
+%nonassoc string int float true false ident
+%nonassoc APP
 
 %%
 Prog : {- empty -}                  {[]}
@@ -78,16 +88,17 @@ Sect : int '+' '{' Block '}'        {((show $1) ++"+", $4)}
 Block : Statement Block             {$1:$2}
       | Statement                   {[$1]}
 
-Statement : return Expr             {Return $2}
-          | Assignment              {Assign $1}
+Statement : return Args EOL         {Return $2}
+          | Assignment EOL          {Assign $1}
 
 Assignment : string '=' Expr        {Def $1 $3}
-           | string '+=' Expr     {Inc $1 $3}
-           | string '-=' Expr     {Dec $1 $3}
-           | string '*=' Expr     {MultVal $1 $3}
-           | string '/=' Expr     {DivVal $1 $3}
+           | string '+=' Expr       {Inc $1 $3}
+           | string '-=' Expr       {Dec $1 $3}
+           | string '*=' Expr       {MultVal $1 $3}
+           | string '/=' Expr       {DivVal $1 $3}
 
-Expr : int                          {Int_ $1}
+Expr : Expr Expr %prec APP          {App $1 $2}
+     | int                          {Int_ $1}
      | float                        {Float_ $1}
      | true                         {True_}
      | false                        {False_}
@@ -112,7 +123,8 @@ Expr : int                          {Int_ $1}
      | Expr '>=' Expr            {MoreEq $1 $3}
      | Expr '==' Expr            {Equal $1 $3}
      | Expr '!=' Expr            {NEqual $1 $3}
-     | string Args                  {Fun $1 $2}
+     | Expr '&&' Expr            {And $1 $3}
+     | Expr '||' Expr            {Or $1 $3}
      | Expr '!!' Expr            {Index $1 $3}
      | '{' Expr '|' PredList '}'    {Comp $2 $4}
 
@@ -120,8 +132,8 @@ Conts : {- empty -}                 {[]}
       | Expr ',' Conts              {$1:$3}
       | Expr                        {[$1]}
 
-Args : {- empty -}                  {[]}
-     | Expr Args                    {$1:$2}
+Args : Expr                       {[$1]}
+     | Expr Args                  {$1:$2}
 
 PredList : Pred ',' PredList        {$1:$3}
          | Pred                     {[$1]}
@@ -140,7 +152,7 @@ type Sect = (String, Block)
 
 type Block = [Statement]
 
-data Statement = Return Expr | Assign Assignment
+data Statement = Return [Expr] | Assign Assignment
                deriving (Eq, Show)
 
 data Assignment = Def String Expr | Inc String Expr | Dec String Expr
@@ -152,8 +164,8 @@ data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr E
           | Div Expr Expr | Mod Expr Expr | Cons Expr Expr | Append Expr Expr
           | If Expr Expr Expr | Lam String Expr | Less Expr Expr | More Expr Expr
           | LessEq Expr Expr | MoreEq Expr Expr | Equal Expr Expr | NEqual Expr Expr
-          | Fun String [Expr] | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr
-          | Var String
+          | App Expr Expr | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr
+          | Var String | And Expr Expr | Or Expr Expr
           deriving (Show,Eq)
 
 data Pred = Member Expr Expr | Prop Expr
