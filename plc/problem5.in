@@ -1,5 +1,4 @@
 init{
-  acc = 0
   fib = [1, 1]
   seen = []
 }

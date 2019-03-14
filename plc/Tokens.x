@@ -87,6 +87,20 @@ data TToken =
     TokenRBlock |
     TokenLine |
     TokenExclamation |
-    TokenComma
+    TokenComma |
+	TokenDoubleAdd |
+	TokenDoubleSub |
+	TokenDoubleAdd |
+	TokenAddEqual |
+	TokenSubEqual |
+	TokenMultEqual |
+	TokenDivEqual |
+	TokenIndex |
+	TokenMember |
+	TokenLessEqual |
+	TokenMoreEqual
 	deriving (Eq, Show)
+	
+tokenPosn :: Token -> (Int, Int)
+tokenPosn (T (AlexPn _ l c) _ = (l, c)
 }

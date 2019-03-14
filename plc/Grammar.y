@@ -18,6 +18,8 @@ import Tokens
     if     { TokenIf _ }
     then   { TokenThen _ }
     else   { TokenElse _ }
+	'++'   { TokenDoubleAdd _ }
+	'--'   { TokenDoubleSub _ }
     ':'    { TokenCons _ }
     '>'    { TokenMore _ }
     '<'    { TokenLess _ }
