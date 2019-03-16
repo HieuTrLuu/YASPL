@@ -42,6 +42,11 @@ getValueBinding x [] = error "Variable binding not found"
 getValueBinding x ((y,e):env) | x == y  = unpack e env
                               | otherwise = getValueBinding x env
 
+getValueBinding' :: String -> Environment -> Expr
+getValueBinding' x [] = error "Variable binding not found"
+getValueBinding' x ((y,e):env) | x == y = e 
+                               | otherwise = getValueBinding' x env
+
 update :: Environment -> String -> Expr -> Environment
 update env x e = (x,e) : env
 
@@ -49,8 +54,6 @@ update env x e = (x,e) : env
 isValue :: Expr -> Bool
 isValue (Int_ x) = True
 isValue (Float_ x) = True
-isValue (List (x:xs)) = (isValue x) && (isValue (List xs))
-isValue (Pair x y) = ((isValue x) && (isValue y))
 isValue True_ = True
 isValue False_ = True
 isValue (Ident a) = True
@@ -62,10 +65,40 @@ isValue _ = False
 -- evalLoop e = evalLoop' (e,[],[])
 --   where evalLoop' (e,env,k) = if (e' == e) && (isValue e') then e' else evalLoop' (e',env',k')
 --                        where (e',env',k') = eval1 (e,env,k) 
+    
+eval :: Expr -> Environment -> Expr
+eval (Int_ a) env = Int_ a
+eval (Float_ a) env = Float_ a
+eval (True_) _ = True_
+eval (False_) _ = False_
+    
+eval (List (x:xs)) [] | isValue (List (x:xs)) = (List (x:xs))
+                      | otherwise = error "List is not valid"
+-- not sure about the (eval List xs env)
+-- eval (List ((Var str):xs)) env = (List (getValueBinding' str env):(eval List xs env))
+        
+eval (Pair e1 e2) [] | isValue (Pair e1 e2) = (Pair e1 e2)
+                     | otherwise = error "Pair is not valid"
 
+eval (Pair (Var str1) e) env | (isValue e) = Pair (getValueBinding' str1 env) e
+                             | otherwise = error "elt 1 of Pair is not valid"
 
+eval (Pair e (Var str2)) env | (isValue e) = Pair e (getValueBinding' str2 env)
+                             | otherwise = error "elt 2 of Pair is not valid"
 
+eval (Pair (Var str1) (Var str2)) env = Pair (getValueBinding' str1 env) (getValueBinding' str2 env)
 
+                
     
     
+    -- eval (List a) [] = List {eval b | b <- a}
+    -- eval (Pair (a, b)) [] = (Pair (eval a []), (eval b []))
+    -- eval e ((str, expr):env) | e == str = expr
+    --                          | otherwise = eval e env
+    -- eval e env = e
+    
+    
+
+    
+evalStatement :: Statement -> Environment -> Environment
 
