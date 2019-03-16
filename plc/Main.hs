@@ -44,16 +44,16 @@ update env x e = (x,e) : env
 
 -- Checks for terminated expressions
 isValue :: Expr -> Bool
-isvalue (True_) = True
-isvalue (False_) = True
-isvalue (Int_ x) = True
-isvalue (Float_ x) = True
-isvalue (List (x:xs)) = (isValue x) && isvalue (List xs)
-isValue (Pair x y) = ((isvalue x) && (isvalue y))
--- isvalue (Ident Int) = True
+isValue (Int_ x) = True
+isValue (Float_ x) = True
+isValue (List (x:xs)) = (isValue x) && (isValue (List xs))
+isValue (Pair x y) = ((isValue x) && (isValue y))
+isValue True_ = True
+isValue False_ = True
+isValue (Ident a) = True
+isValue (Cl _ _ _ ) = True
+isValue _ = False
 
--- isvalue (cl a b c d) = True
--- isvalue _ = False
 
 --Small step evaluation function
 -- eval :: Expr -> Environment -> Expr
@@ -65,6 +65,13 @@ isValue (Pair x y) = ((isvalue x) && (isvalue y))
 -- eval (Pair (a, b) = Pair (eval a, eval b))
 
 -- output :: Expr -> Environment -> IO ()
+
+-- read :: IO ()
+-- read = do word <- sgetLine
+
+
+
+
 
 
 

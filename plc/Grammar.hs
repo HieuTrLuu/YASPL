@@ -2117,6 +2117,13 @@ type Sect = (String, Block)
 
 type Block = [Statement]
 
+data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type
+            deriving (Show,Eq)
+
+type Environment = [(String, Expr)]
+type TEnvironment = [(String, Type)]
+
+
 data Statement = Return [Expr] | Assign Assignment
                deriving (Eq, Show)
 
@@ -2131,6 +2138,7 @@ data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr E
           | LessEq Expr Expr | MoreEq Expr Expr | Equal Expr Expr | NEqual Expr Expr
           | App Expr Expr | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr
           | Var String | And Expr Expr | Or Expr Expr
+          | Cl String Expr Environment
           deriving (Show,Eq)
 
 data Pred = Member Expr Expr | Prop Expr
@@ -2157,7 +2165,19 @@ data Pred = Member Expr Expr | Prop Expr
 
 
 {-# LINE 8 "<command-line>" #-}
-{-# LINE 1 "F:/Users/randy/AppData/Local/Temp/ghc15608_0/ghc_2.h" #-}
+{-# LINE 1 "F:/Users/randy/AppData/Local/Temp/ghc5880_0/ghc_2.h" #-}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
