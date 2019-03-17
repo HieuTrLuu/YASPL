@@ -9,7 +9,7 @@ main = do
      t <- pure (alexScanTokens f)
      g <- pure (parseStreamLang t)
      print g
-     print (evalProg' (g,[]))
+     print (snd $ evalProg' (g,[]))
 
 -- i have declared these in Grammar.y
 -- data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type
@@ -69,7 +69,7 @@ isValue _ = False
 --                        where (e',env',k') = eval1 (e,env,k) 
     
 
-
+--TODO: need to embedded with type checker
 eval' :: (Expr, Environment) -> (Expr, Environment)
 eval' ((Int_ a), env) = (Int_ a, env)
 eval' ((Float_ a), env) = (Float_ a, env)
@@ -78,7 +78,7 @@ eval' ((False_), env) = (False_, env)
     
 eval' ((List (x:xs)), []) | isValue (List (x:xs)) = ((List (x:xs)), [])
                           | otherwise = error "List is not valid"
--- not sure about the (eval' List xs env)
+
 eval' ((List ((Var str):xs)), env) = (List (fst (getValueBinding str env):(fst $ eval' ((List xs), env)):[]), snd (getValueBinding str env))
         
 eval' ((Pair e1 e2), []) | isValue (Pair e1 e2) = ((Pair e1 e2), [])
@@ -96,7 +96,52 @@ eval' ((Add (Var str1) e2), env) = (Add (fst (getValueBinding str1 env)) e2, (sn
 
 eval' ((Add e1 (Var str2)), env) = (Add e1 (fst (getValueBinding str2 env)), (snd (getValueBinding str2 env)))
 
-eval'((Var str), env) = (getValueBinding str env) 
+eval' ((Var str), env) = (getValueBinding str env)
+
+eval' ((If e1 e2 e3), env) | fst ( eval' (e1,env)) == True_ = (eval' (e2, env))
+                           | otherwise = (eval' (e3, env))
+
+eval' ((Lam str e), env) = ((Cl str e env), env)
+
+-- eval' ((App e1 e2), env) = (((App (fst ( eval' (e1,env)) (fst ( eval'( e2,env))), env))))
+eval' ((App e1 e2), env) = ((App expr1 expr2), env)
+  where expr1 = fst (eval' (e1,env))
+        expr2 = fst (eval' (e2,env))
+
+eval' ((Comp (Var str) ((Lam str' e'):[])), env) | str == str' = (e', env)
+                                                 | otherwise = (List [], env)
+
+
+
+-- evalPred :: [Pred] -> (Lam String Expr)
+-- evalPred (x:xs) = evalPred(x) : evalPred(xs)
+-- evalPred [(Member (Var str) e2)] =  (Lam str e2)
+-- evalPred (Prop Expr) =  
+
+-- evalComp :: (Comp Expr [Pred]) -> (List [Expr])
+-- evalComp (Comp (Var str) [pred]) = 
+
+-- evalComp :: (Comp Expr [Pred]) -> Expr
+-- start when there is only member expr
+-- expected e' to be a list
+evalComp (Comp (Var str) ((Lam str' e'):[])) | str == str' = e'
+                                             | otherwise = List []
+
+
+-- can I apply functional programming here ?
+-- can I apply any kind of monad here ?
+-- can I just map the specific case then use monad ????
+evalComp (Comp e ((Prop e'):[])) = 
+
+
+
+
+
+
+
+-- TODO: list comprehension expression
+
+
 
 evalStatement' :: (Statement, Environment) -> (Statement, Environment)
 evalStatement' ((Assign (Inc str e)), env) = (Assign (Def str return) ,update env str return)
@@ -117,6 +162,7 @@ evalStatement' ((Assign (DivVal str e)), env) = (Assign (Def str return), update
 
 evalStatement' ((Assign (Def str e)), env) = (Assign (Def str e), update env str e)
 
+--where Closure comes in
 evalStatement' ((Return e), env) = (Return e, env)
 
 
@@ -127,3 +173,4 @@ evalSection' ((x:xs),env) = evalSection' (xs,(snd $ evalStatement' (x,env)))
 evalProg' :: (Prog, Environment) -> (Prog, Environment)
 evalProg' ((str,block):[],env) = ((str, fst $ evalSection' (block,env)):[], snd $ evalSection' (block,env))
 evalProg' ((x:xs),env) = evalProg' (xs,(snd $ evalSection' (snd x,env)))
+
