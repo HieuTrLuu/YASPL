@@ -42,25 +42,9 @@ getValueBinding x [] = error "Variable binding not found"
 getValueBinding x ((y,e):env) | x == y  = unpack e env
                               | otherwise = getValueBinding x env
 
-getValueBinding' :: String -> Environment -> Expr
-getValueBinding' x [] = error "Variable binding not found"
-getValueBinding' x ((y,e):env) | x == y = e 
-                               | otherwise = getValueBinding' x env
 
 update :: Environment -> String -> Expr -> Environment
 update env x e = (x,e) : env
-
-
--- Don't think we need this function
--- unpackBlock :: Block -> Prog -> (Block,Prog)
-
-
-
--- Look up a block in a prog and unpack it
--- getBlockBinding :: String -> Prog -> (Block,Prog)
--- getBlockBinding x [] = error "Block binding not found"
--- getBlockBinding x ((y,e):env) | x == y  = unpack e env
---                               | otherwise = getBlockBinding x env
 
 updateBlock :: Prog -> String -> Block -> Prog
 updateBlock env x e = (x,e) : env
@@ -92,35 +76,52 @@ eval (False_) _ = False_
 eval (List (x:xs)) [] | isValue (List (x:xs)) = (List (x:xs))
                       | otherwise = error "List is not valid"
 -- not sure about the (eval List xs env)
-eval (List ((Var str):xs)) env = List ((getValueBinding' str env):(eval (List xs) env):[])
+eval (List ((Var str):xs)) env = List (fst (getValueBinding str env):(eval (List xs) env):[])
         
 eval (Pair e1 e2) [] | isValue (Pair e1 e2) = (Pair e1 e2)
                      | otherwise = error "Pair is not valid"
 
-eval (Pair (Var str1) e) env | (isValue e) = Pair (getValueBinding' str1 env) e
+eval (Pair (Var str1) e) env | (isValue e) = Pair (fst (getValueBinding str1 env)) e
                              | otherwise = error "elt 1 of Pair is not valid"
 
-eval (Pair e (Var str2)) env | (isValue e) = Pair e (getValueBinding' str2 env)
+eval (Pair e (Var str2)) env | (isValue e) = Pair e (fst (getValueBinding str2 env))
                              | otherwise = error "elt 2 of Pair is not valid"
 
-eval (Pair (Var str1) (Var str2)) env = Pair (getValueBinding' str1 env) (getValueBinding' str2 env)
-
-eval (Add (Var str1) (Var str2)) env = Add (getValueBinding' str1 env) (getValueBinding' str2 env)
-                                    --  | otherwise = error "2 expr is not valid to be added"
-
 eval (Add (Int_ a) (Int_ b)) env = (Int_ (a+b))
+
+eval (Add (Var str1) e2) env = Add (fst (getValueBinding str1 env)) e2
+
+eval (Add e1 (Var str2)) env = Add e1 (fst (getValueBinding str2 env))
+
+
+
 --TODO: list comprehension
 
+
+
+
 -- TODO: type checking
-evalStatement :: Statement -> Environment -> Environment
-evalStatement (Assign (Inc str e)) env= update env str (Add expr e)
-  where expr = (getValueBinding' str env)
-evalStatement (Assign (Dec str e)) env = update env str (Sub expr e)
-  where expr = (getValueBinding' str env)
-evalStatement (Assign (MultVal str e)) env = update env str (Mult expr e)
-  where expr = (getValueBinding' str env)
-evalStatement (Assign (DivVal str e)) env = update env str (Div expr e)
-  where expr = (getValueBinding' str env)
+-- unpack :: Expr -> Environment -> (Expr,Environment)
+-- unpack (Cl x e env1) env = ((Lam x e) , env1)
+-- unpack e env = (e,env)
+evalStatement :: Statement -> Environment -> (Statement, Environment)
+evalStatement (Assign (Inc str e)) env = (Assign (Def str return) ,update env str return)
+  where expr = fst (getValueBinding str env)
+        return = Add expr e
+
+evalStatement (Assign (Dec str e)) env = (Assign (Def str return), update env str return)
+  where expr = fst (getValueBinding str env)
+        return = Sub expr e
+
+evalStatement (Assign (MultVal str e)) env = (Assign (Def str return), update env str return)
+  where expr = fst (getValueBinding str env)
+        return = Mult expr e
+
+evalStatement (Assign (DivVal str e)) env = (Assign (Def str return), update env str return)
+  where expr = fst (getValueBinding str env)
+        return = Div expr e
+
+evalStatement (Assign (Def str e)) env = (Assign (Def str e), update env str e)
 
 -- evalStatement (Return (x:xs)) env = evalStatement (Return (eval x env):(eval xs )) env
 
@@ -128,7 +129,15 @@ evalStatement (Assign (DivVal str e)) env = update env str (Div expr e)
 -- eavlBlock block env = [ (evalStatement x env) | x <- block]
 
 -- evalProg :: Prog -> Environment -> Environment
--- evalProg prog [] = eval
+evalProg :: Prog -> Environment -> Prog
+evalProg (x:xs) env = [ (str, (evalSection block env)) | (str,block) <- xs ]
+
+
+
+-- assign :: Environment -> String -> Expr -> Environment
+evalSection :: Block -> Environment -> Block
+evalSection block env = [fst (evalStatement statment env) | statment <- block ]
+
 
 
 
