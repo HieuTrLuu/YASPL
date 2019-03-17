@@ -3,7 +3,3 @@ init{
   y = x +1;
   return 0;
 }
-
-0+{
-  return $0;
-}
