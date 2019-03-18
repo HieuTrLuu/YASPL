@@ -103,13 +103,18 @@ eval' ((If e1 e2 e3), env) | fst ( eval' (e1,env)) == True_ = (eval' (e2, env))
 
 eval' ((Lam str e), env) = ((Cl str e env), env)
 
--- eval' ((App e1 e2), env) = (((App (fst ( eval' (e1,env)) (fst ( eval'( e2,env))), env))))
 eval' ((App e1 e2), env) = ((App expr1 expr2), env)
   where expr1 = fst (eval' (e1,env))
         expr2 = fst (eval' (e2,env))
 
--- eval' ((Comp (Var str) ((Lam str' e'):[])), env) | str == str' = (e', env)
---                                                  | otherwise = (List [], env)
+--assumption: will always call the correct var (BE VERY CAREFUL with )
+--base case
+eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
+                                                                    | otherwise = (List [], env)
+
+eval' (Comp (List (x:xs)) ((Prop (Lam str e)):[]), env) | (App (Lam str e) x) == True_ = (List (x:remainder:[]), env)
+                                                        | (App (Lam str e) x) == False_ = (remainder, env)
+                                                     where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str e)):[]), env)
 
 
 
