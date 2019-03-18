@@ -108,8 +108,8 @@ eval' ((App e1 e2), env) = ((App expr1 expr2), env)
   where expr1 = fst (eval' (e1,env))
         expr2 = fst (eval' (e2,env))
 
-eval' ((Comp (Var str) ((Lam str' e'):[])), env) | str == str' = (e', env)
-                                                 | otherwise = (List [], env)
+-- eval' ((Comp (Var str) ((Lam str' e'):[])), env) | str == str' = (e', env)
+--                                                  | otherwise = (List [], env)
 
 
 
@@ -124,14 +124,14 @@ eval' ((Comp (Var str) ((Lam str' e'):[])), env) | str == str' = (e', env)
 -- evalComp :: (Comp Expr [Pred]) -> Expr
 -- start when there is only member expr
 -- expected e' to be a list
-evalComp (Comp (Var str) ((Lam str' e'):[])) | str == str' = e'
-                                             | otherwise = List []
+-- evalComp (Comp (Var str) ((Lam str' e'):[])) | str == str' = e'
+--                                              | otherwise = List []
 
 
 -- can I apply functional programming here ?
 -- can I apply any kind of monad here ?
 -- can I just map the specific case then use monad ????
-evalComp (Comp e ((Prop e'):[])) = 
+-- evalComp (Comp e ((Prop e'):[])) = 
 
 
 
