@@ -112,11 +112,19 @@ eval' ((App e1 e2), env) = ((App expr1 expr2), env)
 eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
                                                                     | otherwise = (List [], env)
 
-eval' (Comp (List (x:xs)) ((Prop (Lam str e)):[]), env) | (App (Lam str e) x) == True_ = (List (x:remainder:[]), env)
+eval' (Comp (List (x:xs)) ((Prop (Lam str e)):[]), env) | (App (Lam str e) x) == True_ = (newList, env)
                                                         | (App (Lam str e) x) == False_ = (remainder, env)
                                                      where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str e)):[]), env)
+                                                           newList = (combineList (List (x:xs)) (remainder))
 
 
+
+-- combineList :: (List [Expr]) -> (List [Expr]) -> (List [Expr])
+combineList :: Expr -> Expr -> Expr
+combineList (List a) (List b) = List (merge a b)
+
+merge [] ys = ys
+merge (x:xs) ys = x:merge ys xs
 
 -- evalPred :: [Pred] -> (Lam String Expr)
 -- evalPred (x:xs) = evalPred(x) : evalPred(xs)
