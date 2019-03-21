@@ -9,16 +9,13 @@ main = do
      t <- pure (alexScanTokens f)
      g <- pure (parseStreamLang t)
      print g
-     print (snd $ evalProg' (g,[]))
+     print (snd $ evalProg' (reverse g,[]))
 
 -- i have declared these in Grammar.y
 -- data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type
 -- type Environment = [(String, Expr)]
 -- type TEnvironment = [(String, Type)]
            
-
-
-
 assign :: Environment -> String -> Expr -> Environment
 assign env k v = (k, v):env
 
@@ -184,6 +181,6 @@ evalSection' ((x:[]),env) = (x:[],(snd $ evalStatement' (x,env)))
 evalSection' ((x:xs),env) = evalSection' (xs,(snd $ evalStatement' (x,env)))
 
 evalProg' :: (Prog, Environment) -> (Prog, Environment)
-evalProg' ((str,block):[],env) = ((str, fst $ evalSection' (block,env)):[], snd $ evalSection' (block,env))
-evalProg' ((x:xs),env) = evalProg' (xs,(snd $ evalSection' (snd x,env)))
+evalProg' ((str,block):[],env) = ((str, fst $ evalSection' (reverse $ block,env)):[],snd $ evalSection' (reverse block,env))
+evalProg' ((x:xs),env) = evalProg' (xs,(snd $ evalSection' (reverse $ snd x,env)))
 
