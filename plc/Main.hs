@@ -9,7 +9,7 @@ main = do
      t <- pure (alexScanTokens f)
      g <- pure (parseStreamLang t)
      print g
-     print (snd $ evalProg' (reverse g,[]))
+     print (fst $ evalProg' (reverse g,[]))
 
 -- i have declared these in Grammar.y
 -- data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type
@@ -27,8 +27,8 @@ reassign ((k1, v1):env) k2 v2 | k1 == k2 = Just ((k2, v2):env)
 -- reassign ((k1, v1):env) k2 v2 = (filter (\(a,b) -> a==k2 ) env)
 
 -- TODO
-isSelfRef :: (String, Expr) -> Bool
-isSelfRef (str, e) = 
+-- isSelfRef :: (String, Expr) -> Bool
+-- isSelfRef (str, e) = 
 
 assignType :: TEnvironment -> String -> Type -> TEnvironment
 assignType tenv k v = (k, v):tenv
@@ -195,6 +195,7 @@ evalSection' ((x:[]),env) = (x:[],(snd $ evalStatement' (x,env)))
 evalSection' ((x:xs),env) = evalSection' (xs,(snd $ evalStatement' (x,env)))
 
 evalProg' :: (Prog, Environment) -> (Prog, Environment)
-evalProg' ((str,block):[],env) = ((str, fst $ evalSection' (reverse $ block,env)):[],snd $ evalSection' (reverse block,env))
-evalProg' ((x:xs),env) = evalProg' (xs,(snd $ evalSection' (reverse $ snd x,env)))
+evalProg' ((str,block):[],env) = ((str, fst $ evalSection' (reverse $ block,env)) : [] ,snd $ evalSection' (reverse block,env))
+evalProg' ((x:xs),env) = (x:bufferProg, bufferEnv)
+  where (bufferProg, bufferEnv) = evalProg' (xs,(snd $ evalSection' (reverse $ snd x,env)))
 
