@@ -24,6 +24,7 @@ reassign [] _ _ = Nothing
 reassign ((k1, v1):env) k2 v2 | k1 == k2 = Just ((k2, v2):env)
                               | otherwise = reassign env k2 v2
 
+
 assignType :: TEnvironment -> String -> Type -> TEnvironment
 assignType tenv k v = (k, v):tenv
 
@@ -40,6 +41,12 @@ getValueBinding x [] = error "Variable binding not found"
 getValueBinding x ((y,e):env) | x == y  = unpack e env
                               | otherwise = getValueBinding x env
 
+
+--TODO: fix this functions (using Maybe type and chaining functionality in Monad)
+getValueBinding' :: String -> Environment -> Maybe (Expr,Environment)
+getValueBinding' x [] = error "Variable binding not found"
+getValueBinding' x ((y,e):env) | x == y  = unpack e env
+                               | otherwise = getValueBinding x env
 
 update :: Environment -> String -> Expr -> Environment
 update env x e = (x,e) : env
@@ -170,7 +177,10 @@ evalStatement' ((Assign (DivVal str e)), env) = (Assign (Def str return), update
   where expr = fst (getValueBinding str env)
         return = Div expr e
 
-evalStatement' ((Assign (Def str e)), env) = (Assign (Def str e), update env str e)
+-- TODO: use the new getValueBinding' to fix this
+evalStatement' ((Assign (Def str e)), env) | 
+      (Assign (Def str e), update env str e)
+
 
 --where Closure comes in
 evalStatement' ((Return e), env) = (Return e, env)
