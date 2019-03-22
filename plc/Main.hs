@@ -9,7 +9,7 @@ main = do
      t <- pure (alexScanTokens f)
      g <- pure (parseStreamLang t)
      print g
-     print (fst $ evalProg' (reverse g,[]))
+     print (snd $ evalProg' (reverse g,[]))
 
 -- i have declared these in Grammar.y
 -- data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type
