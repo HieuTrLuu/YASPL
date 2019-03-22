@@ -1,7 +1,8 @@
-init{
-  return 0;
+start{
+  last = 0;
 }
 
 0+{
-  return $0;
+  return last;
+  last = $0;
 }

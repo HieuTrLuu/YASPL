@@ -1,6 +1,7 @@
 module Main where
 import System.Environment
 import Control.Applicative
+import Data.List.Split
 import Tokens
 import Grammar
 
@@ -8,35 +9,107 @@ main = do
      argsList <- getArgs
      f <- readFile (head argsList)
      t <- pure (alexScanTokens f)
-     g <- pure (parseStreamLang t)
+     p <- pure (parseStreamLang t)
      input <- getLine
-     print g
-     print (snd $ evalProg' (reverse g,[]))
+     input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
+     env <- pure (start p)
+     execute p env input
+     --print p
+     --print (snd $ evalProg' (reverse p,[]))
 
 -- i have declared these in Grammar.y
 -- data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type
 -- type Environment = [(String, Expr)]
 -- type TEnvironment = [(String, Type)]
 
-execute :: Program -> Environment -> [String] -> IO ()
-execute _ _ [] = return
-execute p env (x:xs) = do e <- pure (idents x:env)
-                          e <- execute' p e
+libFunctions :: Environment
+libFunctions = []
+
+start :: Prog -> Environment
+start p = runLine p (("_LINENUM_", Int_ 0):libFunctions)
+
+execute :: Prog -> Environment -> [[Int]] -> IO ()
+execute _ _ [] = return ()
+execute p env (x:xs) = do e <- pure (updateIdents x env 0)
+                          e <- pure (runLine p e)
+                          output e
                           execute p e xs
 
-idents :: String -> [(String, Expr)]
+runLine :: Prog -> Environment -> Environment
+runLine p env = case lookup "_LINENUM_" env of
+                 Just (Int_ a) -> runSect (whichSect p a) p (reassign env "_LINENUM_" (Int_ (a+1)))
 
-idents' String -> Int -> [(String, Expr)]
-idents' [] _ = []
-idents' (x:xs) a = (show a, Int_ (read x)):idents xs (a+1)
+updateIdents :: [Int] -> Environment -> Int -> Environment
+updateIdents [] env _ = env
+updateIdents (x:xs) env a = updateIdents xs (reassign env ("$"++show a) (Int_ x)) (a+1)
+
+formatOut :: Expr -> IO ()
+formatOut (List []) = return ()
+formatOut (List (Int_ a:xs)) = do print (show a)
+                                  formatOut (List xs)
+
+output :: Environment -> IO ()
+output env = case lookup "_OUTPUT_" env of
+               Nothing -> print "0"
+               Just a  -> formatOut a
 
 assign :: Environment -> String -> Expr -> Environment
 assign env k v = (k, v):env
 
-reassign :: Environment -> String -> Expr -> Maybe Environment
-reassign [] _ _ = Nothing
-reassign ((k1, v1):env) k2 v2 | k1 == k2 = Just ((k2, v2):env)
-                              | otherwise = reassign env k2 v2
+reassign :: Environment -> String -> Expr -> Environment
+reassign env k v = case reassign' env k v of
+                    Just env' -> env'
+                    Nothing -> assign env k v
+
+reassign' :: Environment -> String -> Expr -> Maybe Environment
+reassign' [] _ _ = Nothing
+reassign' ((k1, v1):env) k2 v2 | k1 == k2 = Just ((k2, v2):env)
+                              | otherwise = reassign' env k2 v2
+
+whichSect :: Prog -> Int -> String
+whichSect _ 0 = "start"
+whichSect ((s, _):sects) a = case parseSectName s of
+                               []     -> whichSect sects a
+                               [b]    -> if a >= b then (show b)++"+" else whichSect sects a
+                               [b, c] -> if a >= b && a <= c then (show b)++"-"++(show c) else whichSect sects a
+
+parseSectName :: String -> [Int]
+parseSectName s = case last s of
+                    't' -> []
+                    '+' -> [read (init s) :: Int]
+                    _ -> map (read :: String -> Int) (splitOn " " s)
+
+runSect :: String -> Prog -> Environment -> Environment
+runSect _ [] env = env
+runSect s1 ((s2, b):sects) env | s1 == s2 = runBlock b env
+                               | otherwise = runSect s1 sects env
+
+runBlock :: Block -> Environment -> Environment
+runBlock [] env = env
+runBlock (x:xs) env = runBlock xs (runStatement x env)
+
+runStatement :: Statement -> Environment -> Environment
+runStatement (Return exprs) env = reassign env "_OUTPUT_" (List exprs)
+runStatement (Assign a) env = runAssignment a env
+
+runAssignment :: Assignment -> Environment -> Environment
+runAssignment (Def s v) env = reassign env s (eval v env)
+runAssignment (Inc s v) env = case lookup s env of
+                                (Just old) -> reassign env s (eval (Add old v) env)
+                                Nothing -> env
+runAssignment (Dec s v) env = case lookup s env of
+                                (Just old) -> reassign env s (eval (Sub old v) env)
+                                Nothing -> env
+runAssignment (MultVal s v) env = case lookup s env of
+                                (Just old) -> reassign env s (eval (Mult old v) env)
+                                Nothing -> env
+runAssignment (DivVal s v) env = case lookup s env of
+                                (Just old) -> reassign env s (eval (Div old v) env)
+                                Nothing -> env
+
+eval :: Expr -> Environment -> Expr
+eval e env = case eval' (e, env) of
+               (e', env') -> e'
 
 -- reassign ((k1, v1):env) k2 v2 = (filter (\(a,b) -> a==k2 ) env)
 
