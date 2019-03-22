@@ -1,5 +1,6 @@
 module Main where
 import System.Environment
+import Control.Applicative
 import Tokens
 import Grammar
 
@@ -8,6 +9,7 @@ main = do
      f <- readFile (head argsList)
      t <- pure (alexScanTokens f)
      g <- pure (parseStreamLang t)
+     input <- getLine
      print g
      print (snd $ evalProg' (reverse g,[]))
 
@@ -15,7 +17,19 @@ main = do
 -- data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type
 -- type Environment = [(String, Expr)]
 -- type TEnvironment = [(String, Type)]
-           
+
+execute :: Program -> Environment -> [String] -> IO ()
+execute _ _ [] = return
+execute p env (x:xs) = do e <- pure (idents x:env)
+                          e <- execute' p e
+                          execute p e xs
+
+idents :: String -> [(String, Expr)]
+
+idents' String -> Int -> [(String, Expr)]
+idents' [] _ = []
+idents' (x:xs) a = (show a, Int_ (read x)):idents xs (a+1)
+
 assign :: Environment -> String -> Expr -> Environment
 assign env k v = (k, v):env
 
@@ -28,7 +42,7 @@ reassign ((k1, v1):env) k2 v2 | k1 == k2 = Just ((k2, v2):env)
 
 -- TODO
 -- isSelfRef :: (String, Expr) -> Bool
--- isSelfRef (str, e) = 
+-- isSelfRef (str, e) =
 
 assignType :: TEnvironment -> String -> Type -> TEnvironment
 assignType tenv k v = (k, v):tenv
@@ -72,11 +86,11 @@ isValue (Cl _ _ _ ) = True
 isValue _ = False
 
 -- Function to iterate the small step reduction to termination
--- evalLoop :: Expr -> Expr 
+-- evalLoop :: Expr -> Expr
 -- evalLoop e = evalLoop' (e,[],[])
 --   where evalLoop' (e,env,k) = if (e' == e) && (isValue e') then e' else evalLoop' (e',env',k')
---                        where (e',env',k') = eval1 (e,env,k) 
-    
+--                        where (e',env',k') = eval1 (e,env,k)
+
 
 --TODO: need to embedded with type checker
 eval' :: (Expr, Environment) -> (Expr, Environment)
@@ -84,12 +98,12 @@ eval' ((Int_ a), env) = (Int_ a, env)
 eval' ((Float_ a), env) = (Float_ a, env)
 eval' ((True_), env) = (True_, env)
 eval' ((False_), env) = (False_, env)
-    
+
 eval' ((List (x:xs)), []) | isValue (List (x:xs)) = ((List (x:xs)), [])
                           | otherwise = error "List is not valid"
 
 eval' ((List ((Var str):xs)), env) = (List (fst (getValueBinding str env):(fst $ eval' ((List xs), env)):[]), snd (getValueBinding str env))
-        
+
 eval' ((Pair e1 e2), []) | isValue (Pair e1 e2) = ((Pair e1 e2), [])
                          | otherwise = error "Pair is not valid"
 
@@ -138,10 +152,10 @@ merge (x:xs) ys = x:merge ys xs
 -- evalPred :: [Pred] -> (Lam String Expr)
 -- evalPred (x:xs) = evalPred(x) : evalPred(xs)
 -- evalPred [(Member (Var str) e2)] =  (Lam str e2)
--- evalPred (Prop Expr) =  
+-- evalPred (Prop Expr) =
 
 -- evalComp :: (Comp Expr [Pred]) -> (List [Expr])
--- evalComp (Comp (Var str) [pred]) = 
+-- evalComp (Comp (Var str) [pred]) =
 
 -- evalComp :: (Comp Expr [Pred]) -> Expr
 -- start when there is only member expr
@@ -153,7 +167,7 @@ merge (x:xs) ys = x:merge ys xs
 -- can I apply functional programming here ?
 -- can I apply any kind of monad here ?
 -- can I just map the specific case then use monad ????
--- evalComp (Comp e ((Prop e'):[])) = 
+-- evalComp (Comp e ((Prop e'):[])) =
 
 
 
@@ -198,4 +212,3 @@ evalProg' :: (Prog, Environment) -> (Prog, Environment)
 evalProg' ((str,block):[],env) = ((str, fst $ evalSection' (reverse $ block,env)) : [] ,snd $ evalSection' (reverse block,env))
 evalProg' ((x:xs),env) = (x:bufferProg, bufferEnv)
   where (bufferProg, bufferEnv) = evalProg' (xs,(snd $ evalSection' (reverse $ snd x,env)))
-
