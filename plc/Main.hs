@@ -50,8 +50,8 @@ updateIdents [] env _ = env
 updateIdents (x:xs) env a = updateIdents xs (reassign env ("$"++show a) (Int_ x)) (a+1)
 
 formatOut :: Expr -> IO ()
-formatOut (List []) = return ()
-formatOut (List ((Int_ a):xs)) = do print (show a)
+formatOut (List []) = putStr "\n"
+formatOut (List ((Int_ a):xs)) = do putStr ((show a)++" ")
                                     formatOut (List xs)
 formatOut u = print u
 
@@ -185,28 +185,35 @@ eval' (Float_ a, env) = (Float_ a, env)
 eval' (True_, env) = (True_, env)
 eval' (False_, env) = (False_, env)
 eval' (Ident a, env) = getValueBinding ("$"++(show a)) env
-
 eval' (List l, env) = (List [eval e env | e <- l], env)
+eval' (Pair e1 e2, env) = (Pair (fst (eval' (e1, env))) (fst (eval' (e2, env))), env)
+
+eval' (Add e1 e2, env) = evalArith e1 e2 env (+)
+eval' (Sub e1 e2, env) = evalArith e1 e2 env (-)
+eval' (Mult e1 e2, env) = evalArith e1 e2 env (*)
+eval' (Div e1 e2, env) = evalArith e1 e2 env div
+eval' (Mod e1 e2, env) = evalArith e1 e2 env mod
+eval' (Exponent e1 e2, env) = evalArith e1 e2 env (^)
 
 --eval' ((List (x:xs)), []) | isValue (List (x:xs)) = ((List (x:xs)), [])
 --                          | otherwise = error "List is not valid"
 
 --eval' ((List ((Var str):xs)), env) = (List (fst (getValueBinding str env):(fst $ eval' ((List xs), env)):[]), snd (getValueBinding str env))
 
-eval' ((Pair e1 e2), []) | isValue (Pair e1 e2) = ((Pair e1 e2), [])
-                         | otherwise = error "Pair is not valid"
+--eval' ((Pair e1 e2), []) | isValue (Pair e1 e2) = ((Pair e1 e2), [])
+--                         | otherwise = error "Pair is not valid"
 
-eval' ((Pair (Var str1) e), env) | (isValue e) = (Pair (fst (getValueBinding str1 env)) e, (snd (getValueBinding str1 env)))
-                             | otherwise = error "elt 1 of Pair is not valid"
+--eval' ((Pair (Var str1) e), env) | (isValue e) = (Pair (fst (getValueBinding str1 env)) e, (snd (getValueBinding str1 env)))
+--                             | otherwise = error "elt 1 of Pair is not valid"
 
-eval' ((Pair e (Var str2)), env) | (isValue e) = (Pair e (fst (getValueBinding str2 env)), (snd (getValueBinding str2 env)))
-                             | otherwise = error "elt 2 of Pair is not valid"
+--eval' ((Pair e (Var str2)), env) | (isValue e) = (Pair e (fst (getValueBinding str2 env)), (snd (getValueBinding str2 env)))
+--                             | otherwise = error "elt 2 of Pair is not valid"
 
-eval' ((Add (Int_ a) (Int_ b)), env) = ((Int_ (a+b)), env)
+--eval' ((Add (Int_ a) (Int_ b)), env) = ((Int_ (a+b)), env)
 
-eval' ((Add (Var str1) e2), env) = (Add (fst (getValueBinding str1 env)) e2, (snd (getValueBinding str1 env)))
+--eval' ((Add (Var str1) e2), env) = (Add (fst (getValueBinding str1 env)) e2, (snd (getValueBinding str1 env)))
 
-eval' ((Add e1 (Var str2)), env) = (Add e1 (fst (getValueBinding str2 env)), (snd (getValueBinding str2 env)))
+--eval' ((Add e1 (Var str2)), env) = (Add e1 (fst (getValueBinding str2 env)), (snd (getValueBinding str2 env)))
 
 eval' ((Var str), env) = (getValueBinding str env)
 
@@ -229,6 +236,11 @@ eval' (Comp (List (x:xs)) ((Prop (Lam str e)):[]), env) | (App (Lam str e) x) ==
                                                      where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str e)):[]), env)
                                                            newList = (combineList (List (x:xs)) (remainder))
 
+evalArith :: Expr -> Expr -> Environment -> (Int -> Int -> Int) -> (Expr, Environment)
+evalArith (Int_ e1) (Int_ e2) env f = (Int_ (f e1 e2),env)
+evalArith (Int_ e1) e2 env f = evalArith (Int_ e1) (fst (eval' (e2, env))) env f
+evalArith e1 (Int_ e2) env f = evalArith (fst (eval' (e1, env))) (Int_ e2) env f
+evalArith e1 e2 env f = evalArith (fst (eval' (e1, env))) (fst (eval' (e2, env))) env f
 
 -- combineList :: (List [Expr]) -> (List [Expr]) -> (List [Expr])
 combineList :: Expr -> Expr -> Expr
