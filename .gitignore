@@ -1,1 +1,7 @@
-newL-example
+/plc/*
+!/plc/Grammar.y
+!/plc/Tokens.x
+!/plc/makefile
+!/plc/*.spl
+!/plc/*.hs
+!/plc/docs/

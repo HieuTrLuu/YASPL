@@ -1,0 +1,14 @@
+
+("fib",List [Int_ 1,Int_ 1]),
+
+("seen",List []),
+("seen",Cons (Var "seen") (Ident 0)),
+("seen",Cons (Var "seen") (Ident 0)),
+
+("x",App (App (Var "zip") (Var "seen")) (App (Var "reverse") (Var "fib"))),
+("x",Comp (Mult (Var "a") (Var "b")) [Member (Pair (Var "a") (Var "b")) (Var "x")]),
+
+("a",App (Var "last") (Var "fibs")),
+("b",App (Var "head") (App (Var "tail") (App (Var "reverse") (Var "fib")))),
+
+("fib",Cons (Var "fib") (Add (Var "a") (Var "b")))
