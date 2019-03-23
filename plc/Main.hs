@@ -216,11 +216,17 @@ eval' (MoreEq e1 e2, env) = evalBool e1 e2 env (>=)
 eval' (Equal e1 e2, env) = evalBool e1 e2 env (==)
 eval' (NEqual e1 e2, env) = evalBool e1 e2 env (/=)
 
-eval' ((Lam str e), env) = ((Cl str e env), env)
+eval' (And e1 e2, env) | (eval e1 env == True_) && (eval e2 env == True_) = (True_, env)
+                       | otherwise = (False_, env)
 
-eval' ((App e1 e2), env) = ((App expr1 expr2), env)
-  where expr1 = fst (eval' (e1,env))
-        expr2 = fst (eval' (e2,env))
+eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
+                       | eval e2 env == True_ = (True_, env)
+                       | otherwise = (False_, env)
+
+eval' ((Lam str e), env) = ((Lam str e), env)
+
+eval' (App (Lam x e1) e2, env) = (eval e1 (reassign env x (eval e2 env)), env)
+eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env)
 
 --assumption: will always call the correct var (BE VERY CAREFUL with )
 --base case
