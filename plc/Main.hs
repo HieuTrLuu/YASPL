@@ -4,6 +4,7 @@ import Control.Applicative
 import Data.List.Split
 import Tokens
 import Grammar
+import Helper
 
 main = do
      argsList <- getArgs
@@ -14,13 +15,7 @@ main = do
      input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
      env <- pure (start p)
      execute p env input
-     --print p
-     --print (snd $ evalProg' (reverse p,[]))
 
--- i have declared these in Grammar.y
--- data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type
--- type Environment = [(String, Expr)]
--- type TEnvironment = [(String, Type)]
 libFunctions :: Environment
 libFunctions = []
 
@@ -123,11 +118,6 @@ runAssignment (DivVal s v) env = case lookup s env of
 eval :: Expr -> Environment -> Expr
 eval e env = fst (eval' (e, env))
 
--- reassign ((k1, v1):env) k2 v2 = (filter (\(a,b) -> a==k2 ) env)
-
--- TODO
--- isSelfRef :: (String, Expr) -> Bool
--- isSelfRef (str, e) =
 
 assignType :: TEnvironment -> String -> Type -> TEnvironment
 assignType tenv k v = (k, v):tenv
@@ -146,11 +136,6 @@ getValueBinding k env = case lookup k env of
                          Nothing -> error (k++" is undefined")
 
 
---TODO: fix this functions (using Maybe type and chaining functionality in Monad)
--- getValueBinding' :: String -> Environment -> Maybe (Expr,Environment)
--- getValueBinding' x [] = error "Variable binding not found"
--- getValueBinding' x ((y,e):env) | x == y  = unpack e env
---                                | otherwise = getValueBinding x env
 
 update :: Environment -> String -> Expr -> Environment
 update env x e = (x,e) : env
@@ -238,31 +223,32 @@ eval' (Comp (List (x:xs)) ((Prop (Lam str e)):[]), env) | (App (Lam str e) x) ==
                                                      where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str e)):[]), env)
                                                            newList = (combineList (List (x:xs)) (remainder))
 
-evalArith :: Expr -> Expr -> Environment -> (Int -> Int -> Int) -> (Expr, Environment)
-evalArith (Int_ e1) (Int_ e2) env f = (Int_ (f e1 e2),env)
-evalArith (Int_ e1) e2 env f = evalArith (Int_ e1) (fst (eval' (e2, env))) env f
-evalArith e1 (Int_ e2) env f = evalArith (fst (eval' (e1, env))) (Int_ e2) env f
-evalArith e1 e2 env f = evalArith (fst (eval' (e1, env))) (fst (eval' (e2, env))) env f
 
-evalBool :: Expr -> Expr -> Environment -> (Int -> Int -> Bool) -> (Expr, Environment)
-evalBool (Int_ e1) (Int_ e2) env f = case f e1 e2 of
-                                       True -> (True_, env)
-                                       False -> (False_, env)
-evalBool (Int_ e1) e2 env f = evalBool (Int_ e1) (fst (eval' (e2, env))) env f
-evalBool e1 (Int_ e2) env f = evalBool (fst (eval' (e1, env))) (Int_ e2) env f
-evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) env f
 
--- combineList :: (List [Expr]) -> (List [Expr]) -> (List [Expr])
-combineList :: Expr -> Expr -> Expr
-combineList (List a) (List b) = List (merge a b)
 
-merge [] ys = ys
-merge (x:xs) ys = x:merge ys xs
+evalMember :: Pred -> Maybe [Expr]
+evalMember (Member e1 (List (x:xs))) = Just (x:xs) -- in case e1 is (Var str) e2 is List [expr] TODO: catch the exception using Monad
+evalMember (Member _ _ ) = Nothing
 
--- evalPred :: [Pred] -> (Lam String Expr)
--- evalPred (x:xs) = evalPred(x) : evalPred(xs)
--- evalPred [(Member (Var str) e2)] =  (Lam str e2)
--- evalPred (Prop Expr) =
+evalProp :: Pred -> Maybe Expr -> Maybe Expr
+evalProp (Prop e) (Just (List list)) = (Just (List [ (App e x) | x <- list ]))
+evalProp _ _ = Nothing
+
+evalComp :: Maybe Expr -> Maybe Expr
+evalComp (Just (Comp expr ((Member (Var x) e2):xs))) = evalComp (Just (Comp (App (Lam x expr) e2) xs))
+evalComp (Just (Comp expr ((Prop e):xs))) = evalComp ()
+  
+-- seperateCompMember :: Maybe Expr -> Maybe [Expr]
+-- seperateCompMember (Just (Comp e [])) = (Just [])
+-- seperateCompMember (Just (Comp e ((Member e1 e2):xs))) = Just (Comp e (Member e1 e2)):(seperateCompMember (Just (Comp e xs)))
+-- seperateCompMember _ = Nothing
+
+-- seperateCompProp :: Maybe Expr -> Maybe [Expr]
+-- seperateCompProp (Just (Comp e [])) = (Just [])
+-- seperateCompProp (Just (Comp e ((Prop x):xs))) = Just (Comp e ((Prop x):(seperateCompProp (Just (Comp e xs)))))
+-- seperateCompProp _ = Nothing
+
+
 
 -- evalComp :: (Comp Expr [Pred]) -> (List [Expr])
 -- evalComp (Comp (Var str) [pred]) =
@@ -279,46 +265,24 @@ merge (x:xs) ys = x:merge ys xs
 -- can I just map the specific case then use monad ????
 -- evalComp (Comp e ((Prop e'):[])) =
 
+evalArith :: Expr -> Expr -> Environment -> (Int -> Int -> Int) -> (Expr, Environment)
+evalArith (Int_ e1) (Int_ e2) env f = (Int_ (f e1 e2),env)
+evalArith (Int_ e1) e2 env f = evalArith (Int_ e1) (fst (eval' (e2, env))) env f
+evalArith e1 (Int_ e2) env f = evalArith (fst (eval' (e1, env))) (Int_ e2) env f
+evalArith e1 e2 env f = evalArith (fst (eval' (e1, env))) (fst (eval' (e2, env))) env f
+
+evalBool :: Expr -> Expr -> Environment -> (Int -> Int -> Bool) -> (Expr, Environment)
+evalBool (Int_ e1) (Int_ e2) env f = case f e1 e2 of
+                                       True -> (True_, env)
+                                       False -> (False_, env)
+evalBool (Int_ e1) e2 env f = evalBool (Int_ e1) (fst (eval' (e2, env))) env f
+evalBool e1 (Int_ e2) env f = evalBool (fst (eval' (e1, env))) (Int_ e2) env f
+evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) env f
 
 
 
 
 
 
--- TODO: list comprehension expression
 
 
-
-evalStatement' :: (Statement, Environment) -> (Statement, Environment)
-evalStatement' ((Assign (Inc str e)), env) = (Assign (Def str return) ,update env str return)
-  where expr = fst (getValueBinding str env)
-        return = Add expr e
-
-evalStatement' ((Assign (Dec str e)),env) = (Assign (Def str return), update env str return)
-  where expr = fst (getValueBinding str env)
-        return = Sub expr e
-
-evalStatement' ((Assign (MultVal str e)), env) = (Assign (Def str return), update env str return)
-  where expr = fst (getValueBinding str env)
-        return = Mult expr e
-
-evalStatement' ((Assign (DivVal str e)), env) = (Assign (Def str return), update env str return)
-  where expr = fst (getValueBinding str env)
-        return = Div expr e
-
--- TODO: use the new getValueBinding' to fix this
-evalStatement' ((Assign (Def str e)), env) = (Assign (Def str e), update env str e)
-
-
---where Closure comes in
-evalStatement' ((Return e), env) = (Return e, env)
-
-
-evalSection' :: (Block, Environment) -> (Block, Environment)
-evalSection' ((x:[]),env) = (x:[],(snd $ evalStatement' (x,env)))
-evalSection' ((x:xs),env) = evalSection' (xs,(snd $ evalStatement' (x,env)))
-
-evalProg' :: (Prog, Environment) -> (Prog, Environment)
-evalProg' ((str,block):[],env) = ((str, fst $ evalSection' (reverse $ block,env)) : [] ,snd $ evalSection' (reverse block,env))
-evalProg' ((x:xs),env) = (x:bufferProg, bufferEnv)
-  where (bufferProg, bufferEnv) = evalProg' (xs,(snd $ evalSection' (reverse $ snd x,env)))
