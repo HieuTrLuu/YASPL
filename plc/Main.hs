@@ -121,8 +121,7 @@ runAssignment (DivVal s v) env = case lookup s env of
                                 Nothing -> env
 
 eval :: Expr -> Environment -> Expr
-eval e env = case eval' (e, env) of
-               (e', env') -> e'
+eval e env = fst (eval' (e, env))
 
 -- reassign ((k1, v1):env) k2 v2 = (filter (\(a,b) -> a==k2 ) env)
 
@@ -186,7 +185,7 @@ eval' (True_, env) = (True_, env)
 eval' (False_, env) = (False_, env)
 eval' (Ident a, env) = getValueBinding ("$"++(show a)) env
 eval' (List l, env) = (List [eval e env | e <- l], env)
-eval' (Pair e1 e2, env) = (Pair (fst (eval' (e1, env))) (fst (eval' (e2, env))), env)
+eval' (Pair e1 e2, env) = (Pair (eval e1 env) (eval e2 env), env)
 
 eval' (Add e1 e2, env) = evalArith e1 e2 env (+)
 eval' (Sub e1 e2, env) = evalArith e1 e2 env (-)
@@ -195,30 +194,27 @@ eval' (Div e1 e2, env) = evalArith e1 e2 env div
 eval' (Mod e1 e2, env) = evalArith e1 e2 env mod
 eval' (Exponent e1 e2, env) = evalArith e1 e2 env (^)
 
---eval' ((List (x:xs)), []) | isValue (List (x:xs)) = ((List (x:xs)), [])
---                          | otherwise = error "List is not valid"
-
---eval' ((List ((Var str):xs)), env) = (List (fst (getValueBinding str env):(fst $ eval' ((List xs), env)):[]), snd (getValueBinding str env))
-
---eval' ((Pair e1 e2), []) | isValue (Pair e1 e2) = ((Pair e1 e2), [])
---                         | otherwise = error "Pair is not valid"
-
---eval' ((Pair (Var str1) e), env) | (isValue e) = (Pair (fst (getValueBinding str1 env)) e, (snd (getValueBinding str1 env)))
---                             | otherwise = error "elt 1 of Pair is not valid"
-
---eval' ((Pair e (Var str2)), env) | (isValue e) = (Pair e (fst (getValueBinding str2 env)), (snd (getValueBinding str2 env)))
---                             | otherwise = error "elt 2 of Pair is not valid"
-
---eval' ((Add (Int_ a) (Int_ b)), env) = ((Int_ (a+b)), env)
-
---eval' ((Add (Var str1) e2), env) = (Add (fst (getValueBinding str1 env)) e2, (snd (getValueBinding str1 env)))
-
---eval' ((Add e1 (Var str2)), env) = (Add e1 (fst (getValueBinding str2 env)), (snd (getValueBinding str2 env)))
+eval' (Cons e1 (List e2), env) = (List (eval e1 env:e2), env)
+eval' (Cons e1 e2, env) = eval' (Cons e1 (eval e2 env), env)
+eval' (Append (List e1) (List e2), env) = eval' (List (e1++e2), env)
+eval' (Append a@(List e1) e2, env) = eval' (Append a (eval e2 env), env)
+eval' (Append e1 b@(List e2), env) = eval' (Append (eval e1 env) b, env)
+eval' (Index (List e1) (Int_ e2), env) = eval' (e1!!e2, env)
+eval' (Index (List e1) e2, env) = eval' (Index (List e1) (eval e2 env), env)
+eval' (Index e1 (Int_ e2), env) = eval' (Index (eval e1 env) (Int_ e2), env)
+eval' (Index e1 e2, env) = eval' (Index (eval e1 env) e2, env)
 
 eval' ((Var str), env) = (getValueBinding str env)
 
 eval' ((If e1 e2 e3), env) | fst ( eval' (e1,env)) == True_ = (eval' (e2, env))
                            | otherwise = (eval' (e3, env))
+
+eval' (Less e1 e2, env) = evalBool e1 e2 env (<)
+eval' (More e1 e2, env) = evalBool e1 e2 env (>)
+eval' (LessEq e1 e2, env) = evalBool e1 e2 env (<=)
+eval' (MoreEq e1 e2, env) = evalBool e1 e2 env (>=)
+eval' (Equal e1 e2, env) = evalBool e1 e2 env (==)
+eval' (NEqual e1 e2, env) = evalBool e1 e2 env (/=)
 
 eval' ((Lam str e), env) = ((Cl str e env), env)
 
@@ -241,6 +237,14 @@ evalArith (Int_ e1) (Int_ e2) env f = (Int_ (f e1 e2),env)
 evalArith (Int_ e1) e2 env f = evalArith (Int_ e1) (fst (eval' (e2, env))) env f
 evalArith e1 (Int_ e2) env f = evalArith (fst (eval' (e1, env))) (Int_ e2) env f
 evalArith e1 e2 env f = evalArith (fst (eval' (e1, env))) (fst (eval' (e2, env))) env f
+
+evalBool :: Expr -> Expr -> Environment -> (Int -> Int -> Bool) -> (Expr, Environment)
+evalBool (Int_ e1) (Int_ e2) env f = case f e1 e2 of
+                                       True -> (True_, env)
+                                       False -> (False_, env)
+evalBool (Int_ e1) e2 env f = evalBool (Int_ e1) (fst (eval' (e2, env))) env f
+evalBool e1 (Int_ e2) env f = evalBool (fst (eval' (e1, env))) (Int_ e2) env f
+evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) env f
 
 -- combineList :: (List [Expr]) -> (List [Expr]) -> (List [Expr])
 combineList :: Expr -> Expr -> Expr
