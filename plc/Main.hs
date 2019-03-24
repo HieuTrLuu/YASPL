@@ -126,7 +126,7 @@ assignType tenv k v = (k, v):tenv
 
 -- Function to unpack a closure to extract the underlying lambda term and environment
 unpack :: Expr -> Environment -> (Expr,Environment)
-unpack (Cl x e env1) env = ((Lam x e) , env1)
+unpack (Cl x typ e env1) env = ((Lam x typ e) , env1)
 unpack e env = (e,env)
 
 -- Look up a value in an environment and unpack it
@@ -153,7 +153,7 @@ isValue (Float_ x) = True
 isValue True_ = True
 isValue False_ = True
 isValue (Ident a) = True
-isValue (Cl _ _ _ ) = True
+isValue (Cl _ _ _ _) = True
 isValue _ = False
 
 -- Function to iterate the small step reduction to termination
@@ -221,11 +221,11 @@ eval' (Snd (Pair e1 e2), env) = ( e2, env)
 
 
 
-eval' ((Lam str e), env) = ((Lam str e), env) 
+eval' ((Lam str typ e), env) = ((Lam str typ e), env) 
 
--- eval' ((Lam str e), env) = ((Cl str e env), env)
+-- eval' ((Lam str typ e), env) = ((Cl str e env), env)
 
-eval' (App (Lam x e1) e2, env) = (eval e1 (reassign env x (eval e2 env)), env) -- TODO: fix this
+eval' (App (Lam x typ e1) e2, env) = (eval e1 (reassign env x (eval e2 env)), env) -- TODO: fix this
 -- eval' (App (Cl str' e' env') e2, env) = 
 eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env) -- TODO: fix this
 
@@ -242,21 +242,21 @@ eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str
 --   where value = 
 
 
-eval' (Comp (List (x:xs)) ((Prop (Lam str e)):[]), env) | (App (Lam str e) x) == True_ = (newList, env)
-                                                        | (App (Lam str e) x) == False_ = (remainder, env)
-                                                     where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str e)):[]), env)
+eval' (Comp (List (x:xs)) ((Prop (Lam str typ e)):[]), env) | (App (Lam str typ e) x) == True_ = (newList, env)
+                                                        | (App (Lam str typ e) x) == False_ = (remainder, env)
+                                                     where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str typ e)):[]), env)
                                                            newList = (combineList (List (x:xs)) (remainder))
 
 listEnv :: Environment
 listEnv = []
 
   --  Rule to make closures from lambda abstractions.
--- eval1 ((TmLambda x typ e),env,k) = ((Cl x typ e env), env, k)
+-- eval1 ((TmLambda x typ e),env,k) = ((Cl x typ typ e env), env, k)
     
   -- Evaluation rules for application
 -- eval1 ((TmApp e1 e2),env,k) = (e1,env, (HApp e2 env) : k)
 -- eval1 (v,env1,(HApp e env2):k ) | isValue v = (e, env2, (AppH v) : k)
--- eval1 (v,env1,(AppH (Cl x typ e env2) ) : k )  = (e, update env2 x v, k)
+-- eval1 (v,env1,(AppH (Cl x typ typ e env2) ) : k )  = (e, update env2 x v, k)
   
   -- Rule for runtime errors
 
@@ -292,7 +292,7 @@ evalProp _ _ = Nothing
 -- evalComp :: (Comp Expr [Pred]) -> Expr
 -- start when there is only member expr
 -- expected e' to be a list
--- evalComp (Comp (Var str) ((Lam str' e'):[])) | str == str' = e'
+-- evalComp (Comp (Var str) ((Lam str typ' e'):[])) | str == str' = e'
 --                                              | otherwise = List []
 
 
