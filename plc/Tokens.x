@@ -14,6 +14,12 @@ tokens :-
   $digit+ \. $digit+            {\p s -> T p (TokenFloat (read s))}
   $digit+                       {\p s -> T p (TokenInt (read s))}
   \$ $digit+                    {\p s -> T p (TokenIdent (read (tail s)))}
+  "::"                          {\p s -> T p TokenHasType}
+  "let"                         {\p s -> T p TokenLet}
+  "Bool"                        {\p s -> T p TokenTypeBool}
+  "Int"                         {\p s -> T p TokenTypeInt}
+  "Unit"                        {\p s -> T p TokenTypeUnit}
+  "in"                          {\p s -> T p TokenIn}
   "zip"                        {\p s -> T p TokenZip}
   "reverse"                     {\p s -> T p TokenReverse}
   "head"                        {\p s -> T p TokenHead}
@@ -68,6 +74,8 @@ tokens :-
 -- The token type:
 data Token = T AlexPosn TToken deriving (Eq, Show)
 data TToken =
+    TokenLet |
+    TokenIn |
     TokenZip |
     TokenReverse |
     TokenHead |
@@ -118,6 +126,10 @@ data TToken =
     TokenMoreEqual |
     TokenAnd |
     TokenOr |
+    TokenHasType |
+    TokenTypeBool |
+    TokenTypeInt |
+    TokenTypeUnit |
     TokenEOL
     deriving (Eq, Show)
 

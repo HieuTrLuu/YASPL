@@ -7,6 +7,11 @@ import Tokens
 %tokentype { Token }
 %error { parseError }
 %token
+    Bool   { T _ TokenTypeBool } 
+    Int    { T _ TokenTypeInt } 
+    Unit   { T _ TokenTypeUnit }
+    let     { T _ TokenLet  }
+    in     { T _ TokenIn  }
     zip     { T _ TokenZip  }
     reverse     { T _ TokenReverse  }
     head     { T _ TokenHead  }
@@ -57,6 +62,7 @@ import Tokens
     '|'    { T _ TokenLine }
     ','    { T _ TokenComma }
     EOL    { T _ TokenEOL }
+    '::'    { T _ TokenHasType }
 
 
 %nonassoc '>' '>=' '<' '<='
@@ -103,7 +109,15 @@ Assignment : string '=' Expr        {Def $1 $3}
            | string '*=' Expr       {MultVal $1 $3}
            | string '/=' Expr       {DivVal $1 $3}
 
+Type : Bool                     { TBool } 
+     | Int                      { TInt } 
+     | Unit                     { TUnit }
+     | '(' Type ',' Type ')'    { TPair $2 $4 }
+
+
 Expr : Expr Expr %prec APP          {App $1 $2}
+     | lam '(' string '::' Type ')' Expr %prec APP    { Lam $3 $5 $7 }
+     | let '(' string '::' Type ')' '=' Expr in Expr   { Let $3 $5 $8 $10 }
      | int                          {Int_ $1}
      | float                        {Float_ $1}
      | true                         {True_}
@@ -122,7 +136,6 @@ Expr : Expr Expr %prec APP          {App $1 $2}
      | Expr '++' Expr             {Append $1 $3}
      | '(' Expr ')'                 {$2}
      | if Expr then Expr else Expr  {If $2 $4 $6}
-     | lam string '->' Expr      {Lam $2 $4}
      | Expr '<' Expr                {Less $1 $3}
      | Expr '>' Expr                {More $1 $3}
      | Expr '<=' Expr            {LessEq $1 $3}
@@ -139,6 +152,7 @@ Expr : Expr Expr %prec APP          {App $1 $2}
      | tail Expr                 {Tail $2}
      | fst Expr                  {Fst $2}
      | snd Expr                  {Snd $2}
+     
 
 
 
@@ -166,8 +180,8 @@ type Sect = (String, Block)
 
 type Block = [Statement]
 
-data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type
-            deriving (Show,Eq)
+data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type | TUnit
+    deriving (Show,Eq)
 
 type Environment = [(String, Expr)]
 type TEnvironment = [(String, Type)]
@@ -183,13 +197,14 @@ data Assignment = Def String Expr | Inc String Expr | Dec String Expr
 data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr Expr
           | Ident Int | Add Expr Expr | Sub Expr Expr | Mult Expr Expr
           | Div Expr Expr | Mod Expr Expr | Cons Expr Expr | Append Expr Expr
-          | If Expr Expr Expr | Lam String Expr | Less Expr Expr | More Expr Expr
+          | If Expr Expr Expr | Lam String Type Expr | Less Expr Expr | More Expr Expr
           | LessEq Expr Expr | MoreEq Expr Expr | Equal Expr Expr | NEqual Expr Expr
           | App Expr Expr | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr
           | Var String | And Expr Expr | Or Expr Expr
           | Head Expr | Tail Expr | Fst Expr | Snd Expr
           | Zip Expr Expr | Reverse Expr
-          | Cl String Expr Environment
+          | Let String Type Expr Expr
+          | Cl String Type Expr Environment
           deriving (Show,Eq)
 
 data Pred = Member Expr Expr | Prop Expr
