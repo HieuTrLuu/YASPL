@@ -13,8 +13,9 @@ main = do
      p <- pure (parseStreamLang t)
      input <- getContents
      input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
-     env <- pure (start p)
-     execute p env input
+    --  env <- pure (start p)
+     print p
+    --  execute p env input
 
 libFunctions :: Environment
 libFunctions = []
@@ -223,11 +224,19 @@ eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env) -- TODO: fix this
 eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
                                                                     | otherwise = (List [], env)
 
+-- eval' (Comp expr ((Member (Var str') (List (x:xs))):[]) , env) | 
+--                                                                | otherwise = (List [], env)
+
+--   where value = 
+
+
 eval' (Comp (List (x:xs)) ((Prop (Lam str e)):[]), env) | (App (Lam str e) x) == True_ = (newList, env)
                                                         | (App (Lam str e) x) == False_ = (remainder, env)
                                                      where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str e)):[]), env)
                                                            newList = (combineList (List (x:xs)) (remainder))
 
+listEnv :: Environment
+listEnv = []
 
   --  Rule to make closures from lambda abstractions.
 -- eval1 ((TmLambda x typ e),env,k) = ((Cl x typ e env), env, k)
@@ -282,9 +291,21 @@ evalProp _ _ = Nothing
 
 evalArith :: Expr -> Expr -> Environment -> (Int -> Int -> Int) -> (Expr, Environment)
 evalArith (Int_ e1) (Int_ e2) env f = (Int_ (f e1 e2),env)
+evalArith (List e1) (Int_ e2) env f = (List resultList, env)
+  where resultList = [ fst (evalArith x (Int_ e2) env f) | x <- e1 ]
+evalArith (Int_ e1) (List e2) env f = (List resultList, env)
+  where resultList = [ fst (evalArith (Int_ e1) x env f) | x <- e2]
+evalArith (List e1) (List e2) env f = (List resultList, env)
+  where resultList = helperListFunction e1 e2 env f
 evalArith (Int_ e1) e2 env f = evalArith (Int_ e1) (fst (eval' (e2, env))) env f
 evalArith e1 (Int_ e2) env f = evalArith (fst (eval' (e1, env))) (Int_ e2) env f
+evalArith (List e1) e2 env f = evalArith (List e1) (fst (eval' (e2, env))) env f
+evalArith e1 (List e2) env f = evalArith (fst (eval' (e1, env))) (List e2) env f
 evalArith e1 e2 env f = evalArith (fst (eval' (e1, env))) (fst (eval' (e2, env))) env f
+
+helperListFunction :: [Expr] -> [Expr] -> Environment -> (Int -> Int -> Int) -> [Expr]
+helperListFunction [] [] _ _ = []
+helperListFunction (x:xs) (y:ys) env f = (fst (evalArith x y env f)):(helperListFunction xs ys env f)
 
 evalBool :: Expr -> Expr -> Environment -> (Int -> Int -> Bool) -> (Expr, Environment)
 evalBool (Int_ e1) (Int_ e2) env f = case f e1 e2 of
