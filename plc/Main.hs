@@ -90,7 +90,7 @@ parseSectName :: String -> [Int]
 parseSectName s = case last s of
                     't' -> []
                     '+' -> [read (init s) :: Int]
-                    _ -> map (read :: String -> Int) (splitOn " " s)
+                    _ -> map (read :: String -> Int) (splitOn "-" s)
 
 runSect :: String -> Prog -> Environment -> Environment
 runSect _ [] env = env
