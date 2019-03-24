@@ -13,9 +13,9 @@ main = do
      p <- pure (parseStreamLang t)
      input <- getContents
      input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
-    --  env <- pure (start p)
-     print p
-    --  execute p env input
+     env <- pure (start p)
+    --  print p
+     execute p env input
 
 libFunctions :: Environment
 libFunctions = []
@@ -157,10 +157,6 @@ isValue (Cl _ _ _ ) = True
 isValue _ = False
 
 -- Function to iterate the small step reduction to termination
--- evalLoop :: Expr -> Expr
--- evalLoop e = evalLoop' (e,[],[])
---   where evalLoop' (e,env,k) = if (e' == e) && (isValue e') then e' else evalLoop' (e',env',k')
---                        where (e',env',k') = eval1 (e,env,k)
 
 
 --TODO: need to embedded with type checker
@@ -223,24 +219,18 @@ eval' (Snd (Pair e1 e2), env) = ( e2, env)
 
 eval' ((Lam str e), env) = ((Lam str e), env) 
 
--- eval' ((Lam str e), env) = ((Cl str e env), env)
 
 eval' (App (Lam x e1) e2, env) = (eval e1 (reassign env x (eval e2 env)), env) -- TODO: fix this
--- eval' (App (Cl str' e' env') e2, env) = 
 eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env) -- TODO: fix this
 
 -- eval' 
 
 --assumption: will always call the correct var (BE VERY CAREFUL with )
+-- There is a work around for list using member predicate only ( not using propositional logic) which is to used the list operation that I have implmented. But obviously it is not good enough
+-- TODO: will probably have to implement CEk
 --base case
 eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
                                                                     | otherwise = (List [], env)
-
--- eval' (Comp expr ((Member (Var str') (List (x:xs))):[]) , env) | 
---                                                                | otherwise = (List [], env)
-
---   where value = 
-
 
 eval' (Comp (List (x:xs)) ((Prop (Lam str e)):[]), env) | (App (Lam str e) x) == True_ = (newList, env)
                                                         | (App (Lam str e) x) == False_ = (remainder, env)
@@ -250,15 +240,6 @@ eval' (Comp (List (x:xs)) ((Prop (Lam str e)):[]), env) | (App (Lam str e) x) ==
 listEnv :: Environment
 listEnv = []
 
-  --  Rule to make closures from lambda abstractions.
--- eval1 ((TmLambda x typ e),env,k) = ((Cl x typ e env), env, k)
-    
-  -- Evaluation rules for application
--- eval1 ((TmApp e1 e2),env,k) = (e1,env, (HApp e2 env) : k)
--- eval1 (v,env1,(HApp e env2):k ) | isValue v = (e, env2, (AppH v) : k)
--- eval1 (v,env1,(AppH (Cl x typ e env2) ) : k )  = (e, update env2 x v, k)
-  
-  -- Rule for runtime errors
 
 
 
@@ -269,37 +250,6 @@ evalMember (Member _ _ ) = Nothing
 evalProp :: Pred -> Maybe Expr -> Maybe Expr
 evalProp (Prop e) (Just (List list)) = (Just (List [ (App e x) | x <- list ]))
 evalProp _ _ = Nothing
-
--- evalComp :: Maybe Expr -> Maybe Expr
--- evalComp (Just (Comp expr ((Member (Var x) e2):xs))) = evalComp (Just (Comp (App (Lam x expr) e2) xs))
--- evalComp (Just (Comp expr ((Prop e):xs))) = evalComp ()
-  
--- seperateCompMember :: Maybe Expr -> Maybe [Expr]
--- seperateCompMember (Just (Comp e [])) = (Just [])
--- seperateCompMember (Just (Comp e ((Member e1 e2):xs))) = Just (Comp e (Member e1 e2)):(seperateCompMember (Just (Comp e xs)))
--- seperateCompMember _ = Nothing
-
--- seperateCompProp :: Maybe Expr -> Maybe [Expr]
--- seperateCompProp (Just (Comp e [])) = (Just [])
--- seperateCompProp (Just (Comp e ((Prop x):xs))) = Just (Comp e ((Prop x):(seperateCompProp (Just (Comp e xs)))))
--- seperateCompProp _ = Nothing
-
-
-
--- evalComp :: (Comp Expr [Pred]) -> (List [Expr])
--- evalComp (Comp (Var str) [pred]) =
-
--- evalComp :: (Comp Expr [Pred]) -> Expr
--- start when there is only member expr
--- expected e' to be a list
--- evalComp (Comp (Var str) ((Lam str' e'):[])) | str == str' = e'
---                                              | otherwise = List []
-
-
--- can I apply functional programming here ?
--- can I apply any kind of monad here ?
--- can I just map the specific case then use monad ????
--- evalComp (Comp e ((Prop e'):[])) =
 
 evalArith :: Expr -> Expr -> Environment -> (Int -> Int -> Int) -> (Expr, Environment)
 evalArith (Int_ e1) (Int_ e2) env f = (Int_ (f e1 e2),env)
