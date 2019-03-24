@@ -208,10 +208,15 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
                        | eval e2 env == True_ = (True_, env)
                        | otherwise = (False_, env)
 
-eval' ((Lam str e), env) = ((Lam str e), env)
+eval' ((Lam str e), env) = ((Lam str e), env) 
 
-eval' (App (Lam x e1) e2, env) = (eval e1 (reassign env x (eval e2 env)), env)
-eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env)
+-- eval' ((Lam str e), env) = ((Cl str e env), env)
+
+eval' (App (Lam x e1) e2, env) = (eval e1 (reassign env x (eval e2 env)), env) -- TODO: fix this
+-- eval' (App (Cl str' e' env') e2, env) = 
+eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env) -- TODO: fix this
+
+-- eval' 
 
 --assumption: will always call the correct var (BE VERY CAREFUL with )
 --base case
@@ -224,6 +229,16 @@ eval' (Comp (List (x:xs)) ((Prop (Lam str e)):[]), env) | (App (Lam str e) x) ==
                                                            newList = (combineList (List (x:xs)) (remainder))
 
 
+  --  Rule to make closures from lambda abstractions.
+-- eval1 ((TmLambda x typ e),env,k) = ((Cl x typ e env), env, k)
+    
+  -- Evaluation rules for application
+-- eval1 ((TmApp e1 e2),env,k) = (e1,env, (HApp e2 env) : k)
+-- eval1 (v,env1,(HApp e env2):k ) | isValue v = (e, env2, (AppH v) : k)
+-- eval1 (v,env1,(AppH (Cl x typ e env2) ) : k )  = (e, update env2 x v, k)
+  
+  -- Rule for runtime errors
+
 
 
 evalMember :: Pred -> Maybe [Expr]
@@ -234,9 +249,9 @@ evalProp :: Pred -> Maybe Expr -> Maybe Expr
 evalProp (Prop e) (Just (List list)) = (Just (List [ (App e x) | x <- list ]))
 evalProp _ _ = Nothing
 
-evalComp :: Maybe Expr -> Maybe Expr
-evalComp (Just (Comp expr ((Member (Var x) e2):xs))) = evalComp (Just (Comp (App (Lam x expr) e2) xs))
-evalComp (Just (Comp expr ((Prop e):xs))) = evalComp ()
+-- evalComp :: Maybe Expr -> Maybe Expr
+-- evalComp (Just (Comp expr ((Member (Var x) e2):xs))) = evalComp (Just (Comp (App (Lam x expr) e2) xs))
+-- evalComp (Just (Comp expr ((Prop e):xs))) = evalComp ()
   
 -- seperateCompMember :: Maybe Expr -> Maybe [Expr]
 -- seperateCompMember (Just (Comp e [])) = (Just [])
