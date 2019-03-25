@@ -223,6 +223,8 @@ eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env)
 --   Just e -> (e, env)
 --   Nothing -> error (k++" is undefined")
 
+-- eval' (Comp expr ((Member (Var str) (Var str')):xs) , env) = eval' ((Comp expr (Member (Var str') list:xs)),env)
+--   where list = fst (getValueBinding str' env)
 
 
 eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
@@ -232,9 +234,9 @@ eval' (Comp expr ((Member (Var str') e'):xs) , env) = eval' ((Comp newExpr xs),e
   where newExpr = App (Lam str' expr) e'  
                                                                
 
-eval' (Comp expr ((Member (Var str) (Var str')):xs) , env) = eval' ((Comp expr (Member (Var str') list:xs)),env)
-  where list = fst (getValueBinding str' env)
-                                                                    
+
+  
+
 -- eval' (Comp expr (Member (Var str') e2):xs) = (eval (Comp newExpr xs),env)
 --   where newExpr = App (Lam str' expr) e2
 
@@ -246,8 +248,8 @@ eval' (Comp (List (x:xs)) ((Prop e):[]), env) | e == True_ = (List (x:xs),env)
   -- | e == False_ = (remainder, env)
 
 
-eval' ((Comp (Pair (List a) (List b)) []),env) = (convertListPair (Pair (List a) (List b)),env)
-  -- | e == (Pair (List _) (List _)) = (convertListPair (Pair (List a) (List b)),env)
+-- eval' ((Comp (Pair (List a) (List b)) []),env) = (convertListPair (Pair (List a) (List b)),env)
+
 eval' ((Comp e []),env) = eval' (e,env)
 
 convertListPair :: Expr -> Expr

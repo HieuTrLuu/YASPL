@@ -1,0 +1,11 @@
+start{
+  y=[(1,1),(2,2),(3,3)];
+  x = {a |a <-y };
+}
+ 
+--this works 
+start{
+  y=[(1,1),(2,2),(3,3)];
+  x = {a*b | (a,b) <-y };
+}
+--this does not work
