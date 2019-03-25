@@ -146,11 +146,19 @@ eval :: Expr -> Environment -> Expr
 eval e env = evalLoop(e,env,[])
 -- eval e env = fst (eval' (e, env))
 
+
+
 evalLoop :: State -> Expr
 evalLoop (e,env,k) = if (e' == e) && (isValue e') then e' else evalLoop (e',env',k')
   where (e',env',k') = eval1 (e,env,k) 
 
 eval1 :: State -> State
+eval1 ((Pair e1 e2),env,k) = (e1,env,(HPair e2 env):k)
+eval1 (v,env1,(HPair e env2):k) | isValue v = (e,env2,(PairH v) : k)
+eval1 (w,env,(PairH v):k) | isValue w = ( (Pair v w),env,k)
+--TODO: create constructors and destructors for list types. and test them
+-- eval1 (List (x:xs),env,k)  = (xs,env, (HeadH x env) :k)
+-- eval1 (x,env, (HeadH e env):k) | isValue x = ()
 eval1 ((Var x),env,k) = (e',env',k) 
     where (e',env') = getValueBinding x env
                   
@@ -174,7 +182,7 @@ eval1 ((Snd e1),env,k) = (e1,env, SndH : k)
 eval1 ((Pair v w),env, FstH:k) | isValue v && isValue w = ( v , env , k)
 eval1 ((Pair v w),env, SndH:k) | isValue v && isValue w = ( w , env , k)
 eval1 ((Head e1),env,k) = (e1,env, HeadH : k)
-eval1 (List (x:xs),env,HeadH:k) | isValue x = (x,env,k)
+
 
 -- Evaluation rules for pairs
 eval1 ((Pair e1 e2),env,k) = (e1,env,(HPair e2 env):k)
