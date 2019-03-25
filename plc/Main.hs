@@ -14,7 +14,7 @@ main = do
      input <- getContents
      input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
      env <- pure (start p)
-    --  print p
+     print p
      execute p env input
 
 libFunctions :: Environment
@@ -204,15 +204,6 @@ eval' (And e1 e2, env) | (eval e1 env == True_) && (eval e2 env == True_) = (Tru
 eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
                        | eval e2 env == True_ = (True_, env)
                        | otherwise = (False_, env)
-
-eval' (Zip (List e1) (List e2), env) = (List pairs,env)
-  where buffer = zip e1 e2
-        pairs = [Pair (fst x) (snd x) | x <- buffer ]
-eval' (Reverse (List e), env) = (List (reverse e), env)
-eval' (Head (List e), env) = ( head e, env)
-eval' (Tail (List e), env) = ( List (tail e), env)
-eval' (Fst (Pair e1 e2), env) = ( e1, env)
-eval' (Snd (Pair e1 e2), env) = ( e2, env)
 
 
 
