@@ -108,6 +108,7 @@ Assignment : string '=' Expr        {Def $1 $3}
            | string '-=' Expr       {Dec $1 $3}
            | string '*=' Expr       {MultVal $1 $3}
            | string '/=' Expr       {DivVal $1 $3}
+           | let '(' string '::' Type ')' '=' Expr in Expr   { Let $3 $5 $8 $10 }
 
 Type : Bool                     { TBool } 
      | Int                      { TInt } 
@@ -117,7 +118,6 @@ Type : Bool                     { TBool }
 
 Expr : Expr Expr %prec APP          {App $1 $2}
      | lam '(' string '::' Type ')' Expr %prec APP    { Lam $3 $5 $7 }
-     | let '(' string '::' Type ')' '=' Expr in Expr   { Let $3 $5 $8 $10 }
      | int                          {Int_ $1}
      | float                        {Float_ $1}
      | true                         {True_}
@@ -191,7 +191,7 @@ data Statement = Return [Expr] | Assign Assignment
                deriving (Eq, Show)
 
 data Assignment = Def String Expr | Inc String Expr | Dec String Expr
-                | MultVal String Expr | DivVal String Expr
+                | MultVal String Expr | DivVal String Expr | Let String Type Expr Expr
                 deriving (Eq, Show)
 
 data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr Expr
@@ -203,7 +203,6 @@ data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr E
           | Var String | And Expr Expr | Or Expr Expr
           | Head Expr | Tail Expr | Fst Expr | Snd Expr
           | Zip Expr Expr | Reverse Expr
-          | Let String Type Expr Expr
           | Cl String Type Expr Environment
           deriving (Show,Eq)
 
