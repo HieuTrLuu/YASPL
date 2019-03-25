@@ -15,6 +15,8 @@ main = do
      input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
      env <- pure (start p)
      print p
+     print env
+
      execute p env input
 
 libFunctions :: Environment
@@ -161,6 +163,7 @@ isValue _ = False
 
 --TODO: need to embedded with type checker
 eval' :: (Expr, Environment) -> (Expr, Environment)
+eval' ((Pair (List a) (List v)),env) = (convertListPair (Pair (List a) (List v)),env)
 eval' (Int_ a, env) = (Int_ a, env)
 eval' (Float_ a, env) = (Float_ a, env)
 eval' (True_, env) = (True_, env)
@@ -211,25 +214,57 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
 eval' ((Lam str e), env) = ((Lam str e), env) 
 
 
-eval' (App (Lam x e1) e2, env) = (eval e1 (reassign env x (eval e2 env)), env) -- TODO: fix this
-eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env) -- TODO: fix this
+eval' (App (Lam x e1) e2, env) = eval' (eval e1 (reassign env x (eval e2 env)), env) 
+eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env) 
 
--- eval' 
 
---assumption: will always call the correct var (BE VERY CAREFUL with )
--- There is a work around for list using member predicate only ( not using propositional logic) which is to used the list operation that I have implmented. But obviously it is not good enough
--- TODO: will probably have to implement CEk
---base case
+-- eval' ((Comp e list),env) | case lookup 
+-- getValueBinding k env = case lookup k env of
+--   Just e -> (e, env)
+--   Nothing -> error (k++" is undefined")
+
+
+
 eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
                                                                     | otherwise = (List [], env)
 
-eval' (Comp (List (x:xs)) ((Prop (Lam str e)):[]), env) | (App (Lam str e) x) == True_ = (newList, env)
-                                                        | (App (Lam str e) x) == False_ = (remainder, env)
-                                                     where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str e)):[]), env)
-                                                           newList = (combineList (List (x:xs)) (remainder))
+eval' (Comp expr ((Member (Var str') e'):xs) , env) = eval' ((Comp newExpr xs),env)
+  where newExpr = App (Lam str' expr) e'  
+                                                               
 
-listEnv :: Environment
-listEnv = []
+eval' (Comp expr ((Member (Var str) (Var str')):xs) , env) = eval' ((Comp expr (Member (Var str') list:xs)),env)
+  where list = fst (getValueBinding str' env)
+                                                                    
+-- eval' (Comp expr (Member (Var str') e2):xs) = (eval (Comp newExpr xs),env)
+--   where newExpr = App (Lam str' expr) e2
+
+eval' (Comp (List (x:xs)) ((Prop e):[]), env) | e == True_ = (List (x:xs),env) 
+                                              | otherwise = (List (x:xs),env)
+  -- where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str e)):[]), env)
+  --       newList = (combineList (List (x:xs)) (remainder))
+  -- | e == True_ = (newList, env)
+  -- | e == False_ = (remainder, env)
+
+
+eval' ((Comp (Pair (List a) (List b)) []),env) = (convertListPair (Pair (List a) (List b)),env)
+  -- | e == (Pair (List _) (List _)) = (convertListPair (Pair (List a) (List b)),env)
+eval' ((Comp e []),env) = eval' (e,env)
+
+convertListPair :: Expr -> Expr
+convertListPair (Pair (List list1) (List list2)) = List listOfPair
+  where listOfPair = convertHelp list1 list2
+
+convertHelp :: [Expr] -> [Expr] -> [Expr]
+convertHelp [] [] = []
+convertHelp (x:xs) (y:ys) = (Pair x y):(convertHelp xs ys)
+
+-- evalPred :: Expr -> Expr -> Maybe Expr
+-- evalPred e (Member (Var str) e2) = Just (App (Lam str e) (headList e2))
+-- evalPred e (Prop p) = 
+
+headList :: Expr -> Expr 
+headList (List []) =  (List [])
+headList (List (x:xs)) = x
 
 
 
