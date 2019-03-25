@@ -8,6 +8,22 @@ import Grammar
 import Data.Char  
 -- Function to unpack a closure to extract the underlying lambda term and environment
 
+data Frame = HCompare Expr Environment 
+              | CompareH Expr
+              | HAdd Expr Environment | AddH Expr
+              --TODO: others operations
+              | HPair Expr Environment | PairH Expr
+              | FstH | SndH
+              | HeadH |TailH
+              | ReverseH 
+              -- |TODO: List 
+              -- | Comp 
+              | HIf Expr Expr | HLet String Type Expr 
+              | HApp Expr Environment | AppH Expr
+              deriving (Show,Eq)
+type Kontinuation = [ Frame ]
+type State = (Expr,Environment,Kontinuation)
+
 libFunctions :: Environment
 libFunctions = []
 
@@ -52,6 +68,7 @@ isValue (Float_ x) = True
 isValue True_ = True
 isValue False_ = True
 isValue (Ident a) = True
+isValue (List (x:xs)) = (isValue x) && isValue (List xs)
 isValue (Cl _ _ _ _ ) = True
 isValue _ = False
 
@@ -122,9 +139,65 @@ runAssignment (MultVal s v) env = case lookup s env of
 runAssignment (DivVal s v) env = case lookup s env of
                                 (Just old) -> reassign env s (eval (Div old v) env)
                                 Nothing -> env
+runAssignment (Let str typ e1 e2 ) env = reassign env str newExpr
+    where newExpr = eval (App (Cl str typ e1 env) e2) env
 
 eval :: Expr -> Environment -> Expr
-eval e env = fst (eval' (e, env))
+eval e env = evalLoop(e,env,[])
+-- eval e env = fst (eval' (e, env))
+
+evalLoop :: State -> Expr
+evalLoop (e,env,k) = if (e' == e) && (isValue e') then e' else evalLoop (e',env',k')
+  where (e',env',k') = eval1 (e,env,k) 
+
+eval1 :: State -> State
+eval1 ((Var x),env,k) = (e',env',k) 
+    where (e',env') = getValueBinding x env
+                  
+-- Rule for terminated evaluations
+eval1 (v,env,[]) | isValue v = (v,env,[])
+
+eval1 ((Int_ n),env1,(HCompare e env2):k) = (e,env2,(CompareH (Int_ n)) : k)
+eval1 ((Int_ m),env,(CompareH (Int_ n)):k) | n < m = (True_,env,k)
+                                             | otherwise = (False_,env,k)
+
+
+-- Evaluation rules for plus operator
+eval1 ((Add e1 e2),env,k) = (e1,env,(HAdd e2 env):k)
+eval1 ((Int_ n),env1,(HAdd e env2):k) = (e,env2,(AddH (Int_ n)) : k)
+eval1 ((Int_ m),env,(AddH (Int_ n)):k) = (Int_ (n + m),env,k)
+
+-- Evaluation rules for projections
+--TODO: to be created
+eval1 ((Fst e1),env,k) = (e1,env, FstH : k)
+eval1 ((Snd e1),env,k) = (e1,env, SndH : k)
+eval1 ((Pair v w),env, FstH:k) | isValue v && isValue w = ( v , env , k)
+eval1 ((Pair v w),env, SndH:k) | isValue v && isValue w = ( w , env , k)
+eval1 ((Head e1),env,k) = (e1,env, HeadH : k)
+eval1 (List (x:xs),env,HeadH:k) | isValue x = (x,env,k)
+
+-- Evaluation rules for pairs
+eval1 ((Pair e1 e2),env,k) = (e1,env,(HPair e2 env):k)
+eval1 (v,env1,(HPair e env2):k) | isValue v = (e,env2,(PairH v) : k)
+eval1 (w,env,(PairH v):k) | isValue w = ( (Pair v w),env,k)
+
+-- Evaluation rules for if-then-else
+eval1 ((If e1 e2 e3),env,k) = (e1,env,(HIf e2 e3):k)
+eval1 (True_,env,(HIf e2 e3):k) = (e2,env,k)
+eval1 (False_,env,(HIf e2 e3):k) = (e3,env,k)
+
+
+--  Rule to make closures from lambda abstractions.
+eval1 ((Lam x typ e),env,k) = ((Cl x typ e env), env, k)
+
+-- Evaluation rules for application
+eval1 ((App e1 e2),env,k) = (e1,env, (HApp e2 env) : k)
+eval1 (v,env1,(HApp e env2):k ) | isValue v = (e, env2, (AppH v) : k)
+eval1 (v,env1,(AppH (Cl x t e env2) ) : k )  = (e, update env2 x v, k)
+
+
+-- Rule for runtime errors
+eval1 (e,env,k) = error "Evaluation Error"
 
 eval' :: (Expr, Environment) -> (Expr, Environment)
 eval' (Int_ a, env) = (Int_ a, env)
