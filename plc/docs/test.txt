@@ -12,3 +12,4 @@
 ("b",App (Var "head") (App (Var "tail") (App (Var "reverse") (Var "fib")))),
 
 ("fib",Cons (Var "fib") (Add (Var "a") (Var "b")))
+Assign (Def "y" (Comp (Var "z") [Member (Var "z") (List [Int_ 1,Int_ 2,Int_ 3]),Prop (Equal (Var "z") (Int_ 1))]))])
