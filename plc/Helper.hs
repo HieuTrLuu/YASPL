@@ -18,7 +18,7 @@ data Frame = HCompare Expr Environment
               | ReverseH 
               -- |TODO: List 
               -- | Comp 
-              | HIf Expr Expr | HLet String Type Expr 
+              | HIf Expr Expr | HLet String Expr 
               | HApp Expr Environment | AppH Expr
               deriving (Show,Eq)
 type Kontinuation = [ Frame ]
@@ -45,7 +45,7 @@ execute p env (x:xs) = do e <- pure (updateIdents x env 0)
                           execute p e xs
 
 unpack :: Expr -> Environment -> (Expr,Environment)
-unpack (Cl x t e env1) env = ((Lam x t e) , env1)
+unpack (Cl x e env1) env = ((Lam x e) , env1)
 unpack e env = (e,env)
 
 -- Look up a value in an environment and unpack it
@@ -69,10 +69,10 @@ isValue True_ = True
 isValue False_ = True
 isValue (Ident a) = True
 isValue (List (x:xs)) = (isValue x) && isValue (List xs)
-isValue (Cl _ _ _ _ ) = True
+isValue (Cl _ _ _ ) = True
 isValue _ = False
 
---TODO: need to embedded with type checker
+--TODO: need to embedded with e checker
 
 combineList :: Expr -> Expr -> Expr
 combineList (List a) (List b) = List (merge a b)
@@ -139,8 +139,8 @@ runAssignment (MultVal s v) env = case lookup s env of
 runAssignment (DivVal s v) env = case lookup s env of
                                 (Just old) -> reassign env s (eval (Div old v) env)
                                 Nothing -> env
-runAssignment (Let str typ e1 e2 ) env = reassign env str newExpr
-    where newExpr = eval (App (Cl str typ e1 env) e2) env
+runAssignment (Let str  e1 e2 ) env = reassign env str newExpr
+    where newExpr = eval (App (Cl str  e1 env) e2) env
 
 eval :: Expr -> Environment -> Expr
 eval e env = evalLoop(e,env,[])
@@ -153,12 +153,11 @@ evalLoop (e,env,k) = if (e' == e) && (isValue e') then e' else evalLoop (e',env'
   where (e',env',k') = eval1 (e,env,k) 
 
 eval1 :: State -> State
-eval1 ((Pair e1 e2),env,k) = (e1,env,(HPair e2 env):k)
-eval1 (v,env1,(HPair e env2):k) | isValue v = (e,env2,(PairH v) : k)
-eval1 (w,env,(PairH v):k) | isValue w = ( (Pair v w),env,k)
---TODO: create constructors and destructors for list types. and test them
+--TODO: create constructors and destructors for list es. and test them
+
 -- eval1 (List (x:xs),env,k)  = (xs,env, (HeadH x env) :k)
 -- eval1 (x,env, (HeadH e env):k) | isValue x = ()
+
 eval1 ((Var x),env,k) = (e',env',k) 
     where (e',env') = getValueBinding x env
                   
@@ -196,12 +195,12 @@ eval1 (False_,env,(HIf e2 e3):k) = (e3,env,k)
 
 
 --  Rule to make closures from lambda abstractions.
-eval1 ((Lam x typ e),env,k) = ((Cl x typ e env), env, k)
+eval1 ((Lam x  e),env,k) = ((Cl x  e env), env, k)
 
 -- Evaluation rules for application
 eval1 ((App e1 e2),env,k) = (e1,env, (HApp e2 env) : k)
 eval1 (v,env1,(HApp e env2):k ) | isValue v = (e, env2, (AppH v) : k)
-eval1 (v,env1,(AppH (Cl x t e env2) ) : k )  = (e, update env2 x v, k)
+eval1 (v,env1,(AppH (Cl x e env2) ) : k )  = (e, update env2 x v, k)
 
 
 -- Rule for runtime errors
@@ -245,6 +244,8 @@ eval' (MoreEq e1 e2, env) = evalBool e1 e2 env (>=)
 eval' (Equal e1 e2, env) = evalBool e1 e2 env (==)
 eval' (NEqual e1 e2, env) = evalBool e1 e2 env (/=)
 
+-- eval' (Let str  e1 e2) = eval 
+
 eval' (And e1 e2, env) | (eval e1 env == True_) && (eval e2 env == True_) = (True_, env)
                        | otherwise = (False_, env)
 
@@ -264,13 +265,12 @@ eval' (Snd (Pair e1 e2), env) = ( e2, env)
 
 
 
-eval' ((Lam str typ e), env) = ((Lam str typ e), env) 
+-- eval' ((Lam str  e), env) = ((Lam str  e), env) 
 
--- eval' ((Lam str typ e), env) = ((Cl str e env), env)
-
-eval' (App (Lam x typ e1) e2, env) = (eval e1 (reassign env x (eval e2 env)), env) -- TODO: fix this
--- eval' (App (Cl str' e' env') e2, env) = 
-eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env) -- TODO: fix this
+eval' ((Lam str  e), env) = ((Cl str  e env), env)
+eval' (App (Lam x  e1) e2, env) = (eval e1 (reassign env x (eval e2 env)), env)
+-- eval' (App (Cl str'  e' env') e2, env) = ((reductionInLambda (App (Cl str'  e' env') e2),env),env)
+eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env) -- T:breaODO: fix this
 
 -- eval' 
 
@@ -285,9 +285,9 @@ eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str
 --   where value = 
 
 
-eval' (Comp (List (x:xs)) ((Prop (Lam str typ e)):[]), env) | (App (Lam str typ e) x) == True_ = (newList, env)
-                                                        | (App (Lam str typ e) x) == False_ = (remainder, env)
-                                                     where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str typ e)):[]), env)
+eval' (Comp (List (x:xs)) ((Prop (Lam str  e)):[]), env) | (App (Lam str  e) x) == True_ = (newList, env)
+                                                        | (App (Lam str  e) x) == False_ = (remainder, env)
+                                                     where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str  e)):[]), env)
                                                            newList = (combineList (List (x:xs)) (remainder))
 
 
@@ -323,3 +323,20 @@ output :: Environment -> IO ()
 output env = case lookup "_OUTPUT_" env of
                Nothing -> print "0"
                Just a  -> formatOut a
+
+reductionInLambda :: Expr -> Environment -> Expr
+reductionInLambda (App (Cl str  e1 env) (Var str')) env' | str == str' = fst $ getValueBinding str env'
+reductionInLambda (App (Lam str  e1) (Var str')) env' | str == str' = e1
+-- reductionInLambda App (Cl str  e1 env) (App (Var str') e2) | str == str' = 
+
+main = do
+  argsList <- getArgs
+  f <- readFile (head argsList)
+  t <- pure (alexScanTokens f)
+  p <- pure (parseStreamLang t)
+  input <- getContents
+  input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
+  env <- pure (start p)
+  print p
+  print env
+  execute p env input

@@ -14,7 +14,6 @@ tokens :-
   $digit+ \. $digit+            {\p s -> T p (TokenFloat (read s))}
   $digit+                       {\p s -> T p (TokenInt (read s))}
   \$ $digit+                    {\p s -> T p (TokenIdent (read (tail s)))}
-  "::"                          {\p s -> T p TokenHasType}
   "let"                         {\p s -> T p TokenLet}
   "Bool"                        {\p s -> T p TokenTypeBool}
   "Int"                         {\p s -> T p TokenTypeInt}
@@ -126,7 +125,6 @@ data TToken =
     TokenMoreEqual |
     TokenAnd |
     TokenOr |
-    TokenHasType |
     TokenTypeBool |
     TokenTypeInt |
     TokenTypeUnit |
