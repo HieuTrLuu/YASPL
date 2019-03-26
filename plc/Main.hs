@@ -15,6 +15,7 @@ data Frame = HCompare Expr Environment
            | HIf Expr Expr | HLet String Expr 
            | HApp Expr Environment | AppH Expr deriving (Show,Eq)
            
+
 type Kontinuation = [ Frame ]
 type State = (Expr,Environment,Kontinuation)
 
@@ -218,14 +219,14 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
 
 
 eval' ((Lam str e), env) = ((Cl str e newEnv),env)
-  where newEnv = update env str e 
+  where newEnv = update env str e
+
 
 -- eval' ((Cl str (Lam str' e') newEnv),env) = eval' (Lam str' e'),newEnv) 
 --   where newEnv = update env str e 
 
 eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env ) 
-         
-
+       
 
 -- eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
 --                                                                     | otherwise = (List [], env)
@@ -235,7 +236,6 @@ eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env )
                                                                
 -- eval' (Comp (List (x:xs)) ((Prop e):[]), env) | e == True_ = (List (x:xs),env) 
 --                                               | otherwise = (List (x:xs),env)= eval' $ evalLoop (App e1 e2, env ) 
--- eval' ((Comp e []),env) = eval' (e,env)
 
 
 -- eval' (Comp e listPred) = List (test e listOfenv):()
@@ -293,10 +293,10 @@ evalPred ((Member e1 (List list)):xs) | (length list) /= 0 = (Member e1 tailList
                                       | otherwise = []
   where tailList = (tailListExpr' (List list))  
 
-headList :: Expr -> Expr 
+headList :: Expr -> Expr
 headList (List []) =  (List [])
 headList (List (x:xs)) = x
- 
+
 
 function :: Pred -> Environment -> Environment --update the closure environment on predicate
 function (Member (Var str) (List(x:xs))) env = reassign env str x --is this reassign or update
@@ -311,9 +311,8 @@ functionM (Var str) env = case lookup str env of
 
 
 test :: Expr -> [Environment] -> Maybe [Expr] --output is a single element for the list which is the final expression in
-test expr listEnv = do 
-                      filtered <- mapM (\x -> functionM expr x) listEnv
-                      return filtered
+test expr listEnv = do filtered <- mapM (\x -> functionM expr x) listEnv
+                       return filtered
 
 evalExprInComp :: Environment -> Maybe [Expr] -> Maybe Expr
 evalExprInComp env Nothing = Nothing
@@ -361,7 +360,7 @@ evalCEK (a,b,c) = (a,b,c)
 evalLoop :: (Expr,Environment) -> (Expr,Environment)
 evalLoop (e,env)  = evalLoop' (e,env,[])
   where evalLoop' (e,env,k) = if (e' == e) then (e',env') else evalLoop' (e',env',k')
-                       where (e',env',k') = evalCEK (e,env,k) 
+                       where (e',env',k') = evalCEK (e,env,k)
 
 
 -- evalMember :: Pred -> Maybe [Expr]
@@ -406,15 +405,3 @@ prog = [("start",[Assign (Def "last" (App (App (Lam "x" (Lam "y" (Add (Add (Var 
 
 prog1 ::Prog
 prog1 = [("start",[Assign (Def "last" (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))))),Assign (Def "testLast" (App (App (Var "last") (Int_ 1)) (Int_ 2)))])]
-
-
--- prog = [("test",Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))),("_LINENUM_",Int_ 0),
--- ("last",Cl "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))) [("x",Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))),("_LINENUM_",Int_ 0)])
---this must evaluate furthter
-
-
--- ("last",Cl "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))) --env: [("x",Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))),("_LINENUM_",Int_ 0)]),("_LINENUM_",Int_ 0)]
-
--- [("testLast",Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))),
--- ("_LINENUM_",Int_ 0),
--- ("last",Cl "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))) [("x",Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))),("_LINENUM_",Int_ 0)])]
