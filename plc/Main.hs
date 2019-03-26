@@ -136,13 +136,6 @@ unpack :: Expr -> Environment -> (Expr,Environment)
 unpack (Cl x e env1) env = ((Lam x e) , env1)
 unpack e env = (e,env)
 
--- Look up a value in an environment and unpack it
--- getValueBinding is only used for eval1 (small step reductions) methods
--- getValueBinding :: String -> Environment -> (Expr,Environment)
--- getValueBinding k env = case lookup k env of
---                          Just e -> (e, env)
---                          Nothing -> error (k++" is undefined")
-
 getValueBinding :: String -> Environment -> (Expr,Environment)
 getValueBinding x [] = error "Variable binding not found"
 getValueBinding x ((y,e):env) | x == y  = unpack e env
@@ -222,22 +215,6 @@ eval' ((Lam str e), env) = ((Cl str e newEnv),env)
 
 eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env ) 
 
--- eval' (App (Lam str1 (Lam str2 e)) e1, env) = eval (App (Cl str e newEnv),env) 
---   where newEnv = (update env str1 expr1)
-
--- eval' ((App (Cl str' e' env') (Lam str e)),env) = eval' (App e (Cl str e env'),env)
---   where value = fst $ getValueBinding str env'
-
--- eval' ((App (Cl str' e' env') e),env) = (getValueBinding str' env)
-
-
--- eval' ((App e (Cl str e' env'),env)) = eval' (App e value,env)
---   where value = fst $ getValueBinding str env'
-
-
-
--- eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env)
-
 
 eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
                                                                     | otherwise = (List [], env)
@@ -257,9 +234,6 @@ convertHelp :: [Expr] -> [Expr] -> [Expr]
 convertHelp [] [] = []
 convertHelp (x:xs) (y:ys) = (Pair x y):(convertHelp xs ys)
 
--- evalPred :: Expr -> Expr -> Maybe Expr
--- evalPred e (Member (Var str) e2) = Just (App (Lam str e) (headList e2))
--- evalPred e (Prop p) = 
 
 headList :: Expr -> Expr 
 headList (List []) =  (List [])
