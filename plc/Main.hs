@@ -244,15 +244,6 @@ liftFilter pred = liftM (filter pred)
 testCase = (Comp (Add (Var "x") (Var "y")) [Member (Var "x") (Var "list"),Member (Var "y") (Var "list"),Prop (Equal (Var "x") (Var "y"))])
 testPred = [Member (Var "x") (Var "list"),Member (Var "y") (Var "list"),Prop (Equal (Var "x") (Var "y"))]
 
--- (fmap head e2)
--- (fmap function listMember)
-
-
--- testMbre :: Pred a => [a] -> [a]
--- testMbre [] = []
--- testMbre x:(predList) | length list == 0 = []
---                       | otherwise  = (Member a (List xs)):(testMbre listPred)
--- testMbre (Member a (List (x:xs))):(listPred)
 lengthListExpr :: Expr -> Maybe Int
 lengthListExpr (List e) = Just (length e)
 lengthListExpr _ = Nothing
@@ -261,18 +252,17 @@ tailListExpr :: Expr -> Maybe Expr
 tailListExpr (List e) = Just (List (tail e))
 tailListExpr _ = Nothing
 
+tailListExpr' :: Expr -> Expr
+tailListExpr' (List e) = (List (tail e))
 
 evalPred :: [Pred] -> [Pred]
 evalPred [] = []
-evalPred ((Member e1 e2):xs) | (lengthListExpr e2) /= 0 = (Member e1 tailList):(evalPred xs)
+evalPred ((Member e1 (List list)):xs) | (length list) /= 0 = (Member e1 tailList):(evalPred xs)
                              | otherwise = []
-  where tailList = do 
-                    case tailListExpr e2 of
-                      Nothing -> return (List [])
-                      Just n -> return n
-                     
+  where tailList = (tailListExpr' (List list))  
   
-
+evalComp :: Expr -> Expr
+evalComp (Comp e list) = 
 
 convertListPair :: Expr -> Expr
 convertListPair (Pair (List list1) (List list2)) = List listOfPair
@@ -291,22 +281,11 @@ headList (List (x:xs)) = x
 function :: Pred -> Environment -> Environment --update the closure environment on predicate
 function (Member (Var str) (List(x:xs))) env = reassign env str x --is this reassign or update
 
--- mbre :: [Pred] -> [Pred]
--- mbre (Member _ (List [])):(_) = [] 
--- mbre (Member _ (List (x:xs))):listPred = (Member _ (List xs)):(membershipElementReduction listPred)
---not sure about this statement
-
   
 functionM :: Expr -> Environment -> Maybe Expr
 functionM (Var str) env = case lookup str env of
                                 Just x -> Just x
                                 Nothing ->  Nothing
-
--- testMbre :: Pred a => [a] -> [a]
--- testMbre [] = []
--- testMbre x:(predList) | length list == 0 = []
---                       | otherwise  = (Member a (List xs)):(testMbre listPred)
--- testMbre (Member a (List (x:xs))):(listPred)
 
 
 
