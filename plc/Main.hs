@@ -22,7 +22,6 @@ main = do
      env <- pure (start p)
      print p
      print env
-
      execute p env input
 
 libFunctions :: Environment
@@ -214,7 +213,14 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
 eval' ((Lam str e), env) = ((Cl str e newEnv),env)
   where newEnv = update env str e 
 
+eval' (App (Var str) e2, env ) = eval' $ evalLoop (App expr e2, env ) 
+  where expr = fst $ getValueBinding str env
+
+eval' (App e1 (Var str), env ) = eval' $ evalLoop (App e1 expr, env ) 
+  where expr = fst $ getValueBinding str env  
+
 eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env ) 
+         
 
 
 -- eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
@@ -224,7 +230,7 @@ eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env )
 --   where newExpr = App (Lam str' expr) e'  
                                                                
 -- eval' (Comp (List (x:xs)) ((Prop e):[]), env) | e == True_ = (List (x:xs),env) 
---                                               | otherwise = (List (x:xs),env)
+--                                               | otherwise = (List (x:xs),env)= eval' $ evalLoop (App e1 e2, env ) 
 -- eval' ((Comp e []),env) = eval' (e,env)
 
 
@@ -264,7 +270,7 @@ convertHelp [] [] = []
 convertHelp (x:xs) (y:ys) = (Pair x y):(convertHelp xs ys)
 
   
-evalComp :: Expr -> Env -> (Expr,Env)
+-- evalComp :: Expr -> Env -> (Expr,Env)
 -- evalComp (Comp e ((Member (Var var ) x):xs) env = Comp ()
 --   where newEnv = function x env -- not the correct one as only contains env for 1st member predicate, I want all of them
 --         updateValue = eval' (App (lam var e) (getValueBinding var newEnv))
@@ -317,7 +323,7 @@ evalCEK (v,env1,(AppH (Cl x e env2) ) : k )  = (e, update env2 x v, k)
 evalCEK (a,b,c) = (a,b,c)
 
 evalLoop :: (Expr,Environment) -> (Expr,Environment)
-evalLoop (e,env)  = evalLoop' (e,[],[])
+evalLoop (e,env)  = evalLoop' (e,env,[])
   where evalLoop' (e,env,k) = if (e' == e) then (e',env') else evalLoop' (e',env',k')
                        where (e',env',k') = evalCEK (e,env,k) 
 
@@ -359,8 +365,5 @@ evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) 
 
 
 
-
-
-buffer :: Expr
-buffer = (App (App (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))) (Int_ 1)) (Int_ 11))
-
+prog :: Prog
+prog = [("start",[Assign (Def "last" (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))))),Assign (Def "list" (List [Int_ 0,Int_ 1,Int_ 2,Int_ 3,Int_ 4,Int_ 5])),Assign (Def "test" (App (App (Var "last") (Int_ 1)) (Int_ 2)))])]
