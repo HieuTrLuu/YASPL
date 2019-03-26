@@ -1,6 +1,56 @@
 module TypeChecker where
 import Grammar
+import Control.Applicative
 
+checkProgType :: Prog -> TEnvironment -> IO ()
+checkProgType [] _ = return ()
+checkProgType ((_, b):p) env = do checkBlockType b env
+                                  checkProgType p env
+
+checkBlockType :: Block -> TEnvironment -> IO ()
+checkBlockType [] _ = return ()
+checkBlockType (s:b) env = do env' <- pure (evalStatementType s env)
+                              checkBlockType b env'
+
+evalStatementType :: Statement -> TEnvironment -> TEnvironment
+evalStatementType (Assign a) env = evalAssignmentType a env
+evalStatementType (Return es) env = evalReturnArgsType es env
+
+evalAssignmentType :: Assignment -> TEnvironment -> TEnvironment
+evalAssignmentType (Def x e) env = (x, evalType e env):env
+evalAssignmentType (Inc x e) env | t1 /= t2 = error ((show t2)++" does not match type of "++x)
+                                 | t1 /= TInt && t1 /= TFloat = error (x++" cannot be incremented: not a numeric type")
+                                 | otherwise = env
+                                   where
+                                     t1 = evalType (Var x) env
+                                     t2 = evalType e env
+
+evalAssignmentType (Dec x e) env | t1 /= t2 = error ((show t2)++" does not match type of "++x)
+                                 | t1 /= TInt && t1 /= TFloat = error (x++" cannot be decremented: not a numeric type")
+                                 | otherwise = env
+                                  where
+                                    t1 = evalType (Var x) env
+                                    t2 = evalType e env
+
+evalAssignmentType (MultVal x e) env | t1 /= t2 = error ((show t2)++" does not match type of "++x)
+                                     | t1 /= TInt && t1 /= TFloat = error (x++" cannot be multiplied: not a numeric type")
+                                     | otherwise = env
+                                   where
+                                     t1 = evalType (Var x) env
+                                     t2 = evalType e env
+
+evalAssignmentType (DivVal x e) env | t1 /= t2 = error ((show t2)++" does not match type of "++x)
+                                    | t1 /= TInt && t1 /= TFloat = error (x++" cannot be divided: not a numeric type")
+                                    | otherwise = env
+                                   where
+                                     t1 = evalType (Var x) env
+                                     t2 = evalType e env
+
+evalReturnArgsType :: [Expr] -> TEnvironment -> TEnvironment
+evalReturnArgsType [] env = env
+evalReturnArgsType (e:es) env | t /= TInt = error "only expressions of type TInt can be returned"
+                              | otherwise = evalReturnArgsType es env
+                                where t = evalType e env
 
 evalType :: Expr -> TEnvironment -> Type
 evalType (Int_ _) _ = TInt
