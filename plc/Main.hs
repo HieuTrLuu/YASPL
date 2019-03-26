@@ -133,12 +133,15 @@ unpack e env = (e,env)
 
 -- Look up a value in an environment and unpack it
 -- getValueBinding is only used for eval1 (small step reductions) methods
+-- getValueBinding :: String -> Environment -> (Expr,Environment)
+-- getValueBinding k env = case lookup k env of
+--                          Just e -> (e, env)
+--                          Nothing -> error (k++" is undefined")
+
 getValueBinding :: String -> Environment -> (Expr,Environment)
-getValueBinding k env = case lookup k env of
-                         Just e -> (e, env)
-                         Nothing -> error (k++" is undefined")
-
-
+getValueBinding x [] = error "Variable binding not found"
+getValueBinding x ((y,e):env) | x == y  = unpack e env
+                              | otherwise = getValueBinding x env
 
 update :: Environment -> String -> Expr -> Environment
 update env x e = (x,e) : env
@@ -209,22 +212,25 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
                        | otherwise = (False_, env)
 
 
+eval' ((Lam str e), env) = ((Cl str e newEnv),env)
+  where newEnv = update env str e 
+
+-- eval' (App (Lam x e1) e2, env) = eval' (eval e1 (reassign env x (eval e2 env)), env) 
+
+eval' ((App (Lam str e) e') ,env) = eval' ((App (Cl str e newEnv) (fst $ eval' (e',newEnv))),env)
+  where newEnv = (update env str e)
+  -- where newExpr = getValueBinding (update env' str e2)
+
+eval' ((App (Cl str e' env') e),env) = eval' (App value e,env)
+  where value = fst $ getValueBinding str env'
+
+eval' ((App e (Cl str e' env'),env)) = eval' (App e value,env)
+  where value = fst $ getValueBinding str env'
 
 
-eval' ((Lam str e), env) = ((Lam str e), env) 
 
 
-eval' (App (Lam x e1) e2, env) = eval' (eval e1 (reassign env x (eval e2 env)), env) 
-eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env) 
-
-
--- eval' ((Comp e list),env) | case lookup 
--- getValueBinding k env = case lookup k env of
---   Just e -> (e, env)
---   Nothing -> error (k++" is undefined")
-
--- eval' (Comp expr ((Member (Var str) (Var str')):xs) , env) = eval' ((Comp expr (Member (Var str') list:xs)),env)
---   where list = fst (getValueBinding str' env)
+eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env)
 
 
 eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)

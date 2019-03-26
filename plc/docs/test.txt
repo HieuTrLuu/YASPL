@@ -13,3 +13,6 @@
 
 ("fib",Cons (Var "fib") (Add (Var "a") (Var "b")))
 Assign (Def "y" (Comp (Var "z") [Member (Var "z") (List [Int_ 1,Int_ 2,Int_ 3]),Prop (Equal (Var "z") (Int_ 1))]))])
+
+prog :: Prog
+prog = [("start",[Assign (Def "last" (App (App (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))) (Int_ 1)) (Int_ 11)))])]
