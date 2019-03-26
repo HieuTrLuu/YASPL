@@ -1,7 +1,7 @@
 start{
-  last = (\x -> \y ->  x+y+10);
+  last = (\(x:int) ->\(y:int) -> x+y);
 }
 0+{
   buffer = $0;
-  return (last buffer 0);
+  return (last buffer 1);
 }

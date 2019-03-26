@@ -196,7 +196,7 @@ data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr E
           | Var String | And Expr Expr | Or Expr Expr
           | Head Expr | Tail Expr | Fst Expr | Snd Expr
           | Zip Expr Expr | Reverse Expr
-          | Cl String Expr Environment
+          | Cl String Type Expr Environment
           deriving (Show,Eq)
 
 data Pred = Member Expr Expr | Prop Expr

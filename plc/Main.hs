@@ -12,7 +12,7 @@ data Frame = HCompare Expr Environment
            | HAdd Expr Environment | AddH Expr
            | HPair Expr Environment | PairH Expr
            | FstH | SndH 
-           | HIf Expr Expr | HLet String Expr 
+           | HIf Expr Expr
            | HApp Expr Environment | AppH Expr deriving (Show,Eq)
            
 
@@ -140,7 +140,7 @@ assignType tenv k v = (k, v):tenv
 
 -- Function to unpack a closure to extract the underlying lambda term and environment
 unpack :: Expr -> Environment -> (Expr,Environment)
-unpack (Cl x e env1) env = ((Lam x e) , env1)
+unpack (Cl x t e env1) env = ((Lam x t e) , env1)
 unpack e env = (e,env)
 
 getValueBinding :: String -> Environment -> (Expr,Environment)
@@ -164,7 +164,7 @@ isValue True_ = True
 isValue False_ = True
 isValue (Pair e1 e2) = isValue e1 && isValue e2
 isValue (Ident a) = True
-isValue (Cl _ _ _ ) = True
+isValue (Cl _ _ _  _) = True
 isValue _ = False
 
 -- Function to iterate the small step reduction to termination
@@ -218,29 +218,11 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
                        | otherwise = (False_, env)
 
 
-eval' ((Lam str e), env) = ((Cl str e newEnv),env)
+eval' ((Lam str t e), env) = ((Cl str t e newEnv),env)
   where newEnv = update env str e
-
-
--- eval' ((Cl str (Lam str' e') newEnv),env) = eval' (Lam str' e'),newEnv) 
---   where newEnv = update env str e 
 
 eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env ) 
        
-
--- eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
---                                                                     | otherwise = (List [], env)
-
--- eval' (Comp expr ((Member (Var str') e'):xs) , env) = eval' ((Comp newExpr xs),env)
---   where newExpr = App (Lam str' expr) e'  
-                                                               
--- eval' (Comp (List (x:xs)) ((Prop e):[]), env) | e == True_ = (List (x:xs),env) 
---                                               | otherwise = (List (x:xs),env)= eval' $ evalLoop (App e1 e2, env ) 
-
-
--- eval' (Comp e listPred) = List (test e listOfenv):()
---   where membership = filter filterMember listPred
---         listOfenv = (map (\x -> function env x) listOfmembership) --create a list of environment
 
 
 filterMember :: Pred -> Bool
@@ -351,10 +333,10 @@ evalCEK ((If e1 e2 e3),env,k) = (e1,env,(HIf e2 e3):k)
 evalCEK (True_,env,(HIf e2 e3):k) = (e2,env,k)
 evalCEK (False_,env,(HIf e2 e3):k) = (e3,env,k)
 
-evalCEK ((Lam x e),env,k) = ((Cl x e env), env, k)
+evalCEK ((Lam x t e),env,k) = ((Cl x t e env), env, k)
 evalCEK ((App e1 e2),env,k) = (e1,env, (HApp e2 env) : k)
 evalCEK (v,env1,(HApp e env2):k ) | isValue v = (e, env2, (AppH v) : k)
-evalCEK (v,env1,(AppH (Cl x e env2) ) : k )  = (e, update env2 x v, k)
+evalCEK (v,env1,(AppH (Cl x t e env2) ) : k )  = (e, update env2 x v, k)
 evalCEK (a,b,c) = (a,b,c)
 
 evalLoop :: (Expr,Environment) -> (Expr,Environment)
@@ -362,14 +344,6 @@ evalLoop (e,env)  = evalLoop' (e,env,[])
   where evalLoop' (e,env,k) = if (e' == e) then (e',env') else evalLoop' (e',env',k')
                        where (e',env',k') = evalCEK (e,env,k)
 
-
--- evalMember :: Pred -> Maybe [Expr]
--- evalMember (Member e1 (List (x:xs))) = Just (x:xs) -- in case e1 is (Var str) e2 is List [expr] TODO: catch the exception using Monad
--- evalMember (Member _ _ ) = Nothing
-
--- evalProp :: Pred -> Maybe Expr -> Maybe Expr
--- evalProp (Prop e) (Just (List list)) = (Just (List [ (App e x) | x <- list ]))
--- evalProp _ _ = Nothing
 
 evalArith :: Expr -> Expr -> Environment -> (Int -> Int -> Int) -> (Expr, Environment)
 evalArith (Int_ e1) (Int_ e2) env f = (Int_ (f e1 e2),env)
@@ -400,8 +374,8 @@ evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) 
 
 
 
-prog :: Prog
-prog = [("start",[Assign (Def "last" (App (App (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))) (Int_ 1)) (Int_ 2)))])]
+-- prog :: Prog
+-- prog = [("start",[Assign (Def "last" (App (App (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))) (Int_ 1)) (Int_ 2)))])]
 
-prog1 ::Prog
-prog1 = [("start",[Assign (Def "last" (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))))),Assign (Def "testLast" (App (App (Var "last") (Int_ 1)) (Int_ 2)))])]
+-- prog1 ::Prog
+-- prog1 = [("start",[Assign (Def "last" (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))))),Assign (Def "testLast" (App (App (Var "last") (Int_ 1)) (Int_ 2)))])]
