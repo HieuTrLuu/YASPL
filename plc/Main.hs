@@ -217,15 +217,21 @@ eval' ((Lam str e), env) = ((Cl str e newEnv),env)
 eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env ) 
 
 
-eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
-                                                                    | otherwise = (List [], env)
+-- eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
+--                                                                     | otherwise = (List [], env)
 
-eval' (Comp expr ((Member (Var str') e'):xs) , env) = eval' ((Comp newExpr xs),env)
-  where newExpr = App (Lam str' expr) e'  
+-- eval' (Comp expr ((Member (Var str') e'):xs) , env) = eval' ((Comp newExpr xs),env)
+--   where newExpr = App (Lam str' expr) e'  
                                                                
-eval' (Comp (List (x:xs)) ((Prop e):[]), env) | e == True_ = (List (x:xs),env) 
-                                              | otherwise = (List (x:xs),env)
-eval' ((Comp e []),env) = eval' (e,env)
+-- eval' (Comp (List (x:xs)) ((Prop e):[]), env) | e == True_ = (List (x:xs),env) 
+--                                               | otherwise = (List (x:xs),env)
+-- eval' ((Comp e []),env) = eval' (e,env)
+
+
+-- eval' (Comp e listPred) = List (test e listOfenv):()
+--   where membership = filter filterMember listPred
+--         listOfenv = (map (\x -> function env x) listOfmembership) --create a list of environment
+
 
 filterMember :: Pred -> Bool
 filterMember (Member e1 e2) = True
@@ -257,14 +263,20 @@ headList :: Expr -> Expr
 headList (List []) =  (List [])
 headList (List (x:xs)) = x
 
+testMbre :: Pred a => [a] -> [a]
+testMbre [] = []
 
--- getAsInt :: String -> Environment -> Int
--- getAsInt k env = case lookup k env of
---                    Just (Int_ x) -> x
---                    Nothing      -> error (k++" not defined.")
+-- testMbre (Member _ (List [])):(what) = [] 
+-- testMbre (Member _ (List (x:xs))):(listPred) = (Member _ (List xs)):(testMbre listPred)
 
 function :: Pred -> Environment -> Environment
-function (Member (Var str) (List(x:xs))) env = reassign env str x --is this reassign or update
+function (Member (Var str) (List(x:xs))) env = reassign env str x 
+--is this reassign or update
+
+-- mbre :: [Pred] -> [Pred]
+-- mbre (Member _ (List [])):(_) = [] 
+-- mbre (Member _ (List (x:xs))):listPred = (Member _ (List xs)):(membershipElementReduction listPred)
+--not sure about this statement
 
   
 functionM :: Expr -> Environment -> Maybe Expr
@@ -272,10 +284,7 @@ functionM (Var str) env = case lookup str env of
                                 Just x -> Just x
                                 Nothing ->  Nothing
 
-listOfmembership =  (filter filterMember testPred) --list of membership
-listOfenv = (map (\x -> function env x) listOfmembership) --create a list of environment
 
-lookUpSpecificVarInComp = test expr (map (\x -> function env x) (filter filterMember testPred)) --look up a specific var in comp
 
 
 test :: Expr -> [Environment] -> Maybe [Expr] --should only contain 1 elt
@@ -283,9 +292,6 @@ test expr listEnv = do
                       filtered <- mapM (\x -> functionM expr x) listEnv
                       return filtered
 
-eval' (Comp e listPred) = (test e listOfenv)
-  where membership = filter filterMember listPred
-        listOfenv = (map (\x -> function env x) listOfmembership) --create a list of environment
 
 
 evalCEK :: State -> State
