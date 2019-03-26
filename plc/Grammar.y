@@ -56,6 +56,9 @@ import Tokens
     '}'    { T _ TokenRBlock  }
     '|'    { T _ TokenLine }
     ','    { T _ TokenComma }
+    t_int  { T _ TokenTypeInt}
+    t_float  { T _ TokenTypeFloat}
+    t_bool  { T _ TokenTypeBool}
     EOL    { T _ TokenEOL }
 
 
@@ -122,7 +125,7 @@ Expr : Expr Expr %prec APP          {App $1 $2}
      | Expr '++' Expr             {Append $1 $3}
      | '(' Expr ')'                 {$2}
      | if Expr then Expr else Expr  {If $2 $4 $6}
-     | lam string '->' Expr      {Lam $2 $4}
+     | lam '(' string ':' T ')' '->' Expr      {Lam $3 $5 $8}
      | Expr '<' Expr                {Less $1 $3}
      | Expr '>' Expr                {More $1 $3}
      | Expr '<=' Expr            {LessEq $1 $3}
@@ -140,7 +143,11 @@ Expr : Expr Expr %prec APP          {App $1 $2}
      | fst Expr                  {Fst $2}
      | snd Expr                  {Snd $2}
 
-
+T : t_int {TInt}
+  | t_bool {TBool}
+  | t_float {TFloat}
+  | '[' T ']' {TList $2}
+  | '(' T ',' T ')' {TPair $2 $4}
 
 Conts : {- empty -}                 {[]}
       | Expr ',' Conts              {$1:$3}
@@ -183,7 +190,7 @@ data Assignment = Def String Expr | Inc String Expr | Dec String Expr
 data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr Expr
           | Ident Int | Add Expr Expr | Sub Expr Expr | Mult Expr Expr
           | Div Expr Expr | Mod Expr Expr | Cons Expr Expr | Append Expr Expr
-          | If Expr Expr Expr | Lam String Expr | Less Expr Expr | More Expr Expr
+          | If Expr Expr Expr | Lam String Type Expr | Less Expr Expr | More Expr Expr
           | LessEq Expr Expr | MoreEq Expr Expr | Equal Expr Expr | NEqual Expr Expr
           | App Expr Expr | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr
           | Var String | And Expr Expr | Or Expr Expr

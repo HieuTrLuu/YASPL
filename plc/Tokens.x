@@ -26,6 +26,9 @@ tokens :-
   "then"                        {\p s -> T p TokenThen}
   "else"                        {\p s -> T p TokenElse}
   "return"                      {\p s -> T p TokenReturn}
+  "int"                         {\p s -> T p TokenTypeInt}
+  "float"                       {\p s -> T p TokenTypeFloat}
+  "bool"                        {\p s -> T p TokenTypeBool}
   "++"                          {\p s -> T p TokenDoubleAdd}
   "--"                          {\p s -> T p TokenDoubleSub}
   "=="                          {\p s -> T p TokenDoubleEqual}
@@ -118,6 +121,9 @@ data TToken =
     TokenMoreEqual |
     TokenAnd |
     TokenOr |
+    TokenTypeInt |
+    TokenTypeFloat |
+    TokenTypeBool |
     TokenEOL
     deriving (Eq, Show)
 
