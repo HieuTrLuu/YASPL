@@ -1,6 +1,8 @@
 {
 module Grammar where
 import Tokens
+import Control.DeepSeq
+import GHC.Generics (Generic, Generic1)
 }
 
 %name parseStreamLang
@@ -175,6 +177,15 @@ type Block = [Statement]
 
 data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type | TAny
             deriving (Show,Eq)
+
+instance NFData Type where
+  rnf TInt = ()
+  rnf TFloat = ()
+  rnf TBool = ()
+  rnf TAny = ()
+  rnf (TList t) = rnf t
+  rnf (TPair t1 t2) = let a = rnf t1 in rnf t2
+  rnf (TFun t1 t2) = let a = rnf t1 in rnf t2
 
 type Environment = [(String, Expr)]
 type TEnvironment = [(String, Type)]

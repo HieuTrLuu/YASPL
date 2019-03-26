@@ -2,6 +2,6 @@ start{
   last = (\(x:int) ->\(y:int) -> x+y);
 }
 0+{
-  buffer = $0;
-  return (last buffer 1);
+  //buffer = $0;
+  return (last $0 1);
 }

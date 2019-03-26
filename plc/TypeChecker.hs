@@ -1,16 +1,15 @@
 module TypeChecker where
+import Control.Exception
 import Grammar
 import Control.Applicative
 
-checkProgType :: Prog -> TEnvironment -> IO ()
-checkProgType [] _ = return ()
-checkProgType ((_, b):p) env = do checkBlockType b env
-                                  checkProgType p env
+checkProgType :: Prog -> TEnvironment -> TEnvironment
+checkProgType [] env = env
+checkProgType ((_, b):p) env = let env' = checkBlockType b env in checkProgType p env'
 
-checkBlockType :: Block -> TEnvironment -> IO ()
-checkBlockType [] _ = return ()
-checkBlockType (s:b) env = do env' <- pure (evalStatementType s env)
-                              checkBlockType b env'
+checkBlockType :: Block -> TEnvironment -> TEnvironment
+checkBlockType [] env = env
+checkBlockType (s:b) env = let env' = evalStatementType s env in checkBlockType b env'
 
 evalStatementType :: Statement -> TEnvironment -> TEnvironment
 evalStatementType (Assign a) env = evalAssignmentType a env
@@ -60,7 +59,7 @@ evalType False_ _ = TBool
 evalType (Ident _) _ = TInt
 evalType (Var a) env = case lookup a env of
                         Just t  -> t
-                        Nothing -> error (a++"is not defined")
+                        Nothing -> error (a++" is not defined\n"++(show env))
 
 evalType (List a) env = TList (evalListType a env)
 evalType (Pair e1 e2) env | t1 == t2  = t1

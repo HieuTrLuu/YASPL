@@ -1,12 +1,14 @@
 {-# OPTIONS_GHC -w #-}
 module Grammar where
 import Tokens
+import Control.DeepSeq
+import GHC.Generics (Generic, Generic1)
 import qualified Data.Array as Happy_Data_Array
 import qualified Data.Bits as Bits
 import Control.Applicative(Applicative(..))
 import Control.Monad (ap)
 
--- parser produced by Happy Version 1.19.8
+-- parser produced by Happy Version 1.19.9
 
 data HappyAbsSyn t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14
 	= HappyTerminal (Token)
@@ -3080,6 +3082,15 @@ type Block = [Statement]
 data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type | TAny
             deriving (Show,Eq)
 
+instance NFData Type where
+  rnf TInt = ()
+  rnf TFloat = ()
+  rnf TBool = ()
+  rnf TAny = ()
+  rnf (TList t) = rnf t
+  rnf (TPair t1 t2) = let a = rnf t1 in rnf t2
+  rnf (TFun t1 t2) = let a = rnf t1 in rnf t2
+
 type Environment = [(String, Expr)]
 type TEnvironment = [(String, Type)]
 
@@ -3105,45 +3116,12 @@ data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr E
 
 data Pred = Member Expr Expr | Prop Expr
           deriving (Eq, Show)
-{-# LINE 1 "templates/GenericTemplate.hs" #-}
-{-# LINE 1 "templates/GenericTemplate.hs" #-}
+{-# LINE 1 "templates\GenericTemplate.hs" #-}
+{-# LINE 1 "templates\\\\GenericTemplate.hs" #-}
 {-# LINE 1 "<built-in>" #-}
 {-# LINE 1 "<command-line>" #-}
 {-# LINE 8 "<command-line>" #-}
-# 1 "/usr/include/stdc-predef.h" 1 3 4
-
-# 17 "/usr/include/stdc-predef.h" 3 4
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+{-# LINE 1 "D:/GitHub/haskell-platform/build/ghc-bindist/local/lib/include/ghcversion.h" #-}
 
 
 
@@ -3160,7 +3138,7 @@ data Pred = Member Expr Expr | Prop Expr
 
 
 {-# LINE 8 "<command-line>" #-}
-{-# LINE 1 "/usr/lib/ghc/include/ghcversion.h" #-}
+{-# LINE 1 "F:/Users/randy/AppData/Local/Temp/ghc15608_0/ghc_2.h" #-}
 
 
 
@@ -3178,8 +3156,7 @@ data Pred = Member Expr Expr | Prop Expr
 
 
 
-{-# LINE 8 "<command-line>" #-}
-{-# LINE 1 "/tmp/ghc8814_0/ghc_2.h" #-}
+
 
 
 
@@ -3337,7 +3314,7 @@ data Pred = Member Expr Expr | Prop Expr
 
 
 {-# LINE 8 "<command-line>" #-}
-{-# LINE 1 "templates/GenericTemplate.hs" #-}
+{-# LINE 1 "templates\\\\GenericTemplate.hs" #-}
 -- Id: GenericTemplate.hs,v 1.26 2005/01/14 14:47:22 simonmar Exp 
 
 
@@ -3348,7 +3325,7 @@ data Pred = Member Expr Expr | Prop Expr
 
 
 
-{-# LINE 43 "templates/GenericTemplate.hs" #-}
+{-# LINE 43 "templates\\\\GenericTemplate.hs" #-}
 
 data Happy_IntList = HappyCons Int Happy_IntList
 
@@ -3358,11 +3335,11 @@ data Happy_IntList = HappyCons Int Happy_IntList
 
 
 
-{-# LINE 65 "templates/GenericTemplate.hs" #-}
+{-# LINE 65 "templates\\\\GenericTemplate.hs" #-}
 
-{-# LINE 75 "templates/GenericTemplate.hs" #-}
+{-# LINE 75 "templates\\\\GenericTemplate.hs" #-}
 
-{-# LINE 84 "templates/GenericTemplate.hs" #-}
+{-# LINE 84 "templates\\\\GenericTemplate.hs" #-}
 
 infixr 9 `HappyStk`
 data HappyStk a = HappyStk a (HappyStk a)
@@ -3386,9 +3363,9 @@ happyAccept j tk st sts (HappyStk ans _) =
 -----------------------------------------------------------------------------
 -- Arrays only: do the next action
 
-{-# LINE 137 "templates/GenericTemplate.hs" #-}
+{-# LINE 137 "templates\\\\GenericTemplate.hs" #-}
 
-{-# LINE 147 "templates/GenericTemplate.hs" #-}
+{-# LINE 147 "templates\\\\GenericTemplate.hs" #-}
 indexShortOffAddr arr off = arr Happy_Data_Array.! off
 
 
@@ -3501,7 +3478,7 @@ happyDropStk n (x `HappyStk` xs) = happyDropStk (n - ((1)::Int)) xs
 -----------------------------------------------------------------------------
 -- Moving to a new state after a reduction
 
-{-# LINE 267 "templates/GenericTemplate.hs" #-}
+{-# LINE 267 "templates\\\\GenericTemplate.hs" #-}
 happyGoto action j tk st = action j j tk (HappyState action)
 
 
@@ -3560,7 +3537,7 @@ happyDontSeq a b = b
 -- of deciding to inline happyGoto everywhere, which increases the size of
 -- the generated parser quite a bit.
 
-{-# LINE 333 "templates/GenericTemplate.hs" #-}
+{-# LINE 333 "templates\\\\GenericTemplate.hs" #-}
 {-# NOINLINE happyShift #-}
 {-# NOINLINE happySpecReduce_0 #-}
 {-# NOINLINE happySpecReduce_1 #-}

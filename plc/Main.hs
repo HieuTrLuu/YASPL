@@ -6,15 +6,17 @@ import Data.List.Split
 import Tokens
 import Grammar
 import Helper
+import TypeChecker
+import Control.DeepSeq
 
-data Frame = HCompare Expr Environment 
+data Frame = HCompare Expr Environment
            | CompareH Expr
            | HAdd Expr Environment | AddH Expr
            | HPair Expr Environment | PairH Expr
-           | FstH | SndH 
+           | FstH | SndH
            | HIf Expr Expr
            | HApp Expr Environment | AppH Expr deriving (Show,Eq)
-           
+
 
 type Kontinuation = [ Frame ]
 type State = (Expr,Environment,Kontinuation)
@@ -26,9 +28,8 @@ main = do
      p <- pure (parseStreamLang t)
      input <- getContents
      input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
-     env <- pure (start p)
-     print p
-     print env
+     t <- pure (checkProgType p [])
+     env <- t `deepseq` pure (start p)
      execute p env input
 
 libFunctions :: Environment
@@ -144,7 +145,7 @@ unpack (Cl x t e env1) env = ((Lam x t e) , env1)
 unpack e env = (e,env)
 
 getValueBinding :: String -> Environment -> (Expr,Environment)
-getValueBinding x [] = error "Variable binding not found"
+getValueBinding x [] = error ("Variable binding not found: "++x)
 getValueBinding x ((y,e):env) | x == y  = unpack e env
                               | otherwise = getValueBinding x env
 
@@ -221,8 +222,8 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
 eval' ((Lam str t e), env) = ((Cl str t e newEnv),env)
   where newEnv = update env str e
 
-eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env ) 
-       
+eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env )
+
 
 
 filterMember :: Pred -> Bool
@@ -255,13 +256,13 @@ convertHelp :: [Expr] -> [Expr] -> [Expr]
 convertHelp [] [] = []
 convertHelp (x:xs) (y:ys) = (Pair x y):(convertHelp xs ys)
 
-  
+
 -- evalComp :: Expr -> Env -> (Expr,Env)
 -- evalComp (Comp e ((Member (Var var ) x):xs) env = Comp ()
 --   where newEnv = function x env -- not the correct one as only contains env for 1st member predicate, I want all of them
 --         updateValue = eval' (App (lam var e) (getValueBinding var newEnv))
 --         map ()
--- evalComp (Comp e listPred) env = 
+-- evalComp (Comp e listPred) env =
 --   where envList = map (\pred -> function pred env) listPred --environment list of stuff envs. Each env contains a binding for a variable
   -- => How do I do look up for nested lambda which contains multiple expr (Var) in multiple/seperate env
         -- exprList = map (\env -> e env) envList --e here is the var (e.g y in y <- list)
@@ -273,7 +274,7 @@ evalPred :: [Pred] -> [Pred] --move on another elt in list. this function is cal
 evalPred [] = []
 evalPred ((Member e1 (List list)):xs) | (length list) /= 0 = (Member e1 tailList):(evalPred xs)
                                       | otherwise = []
-  where tailList = (tailListExpr' (List list))  
+  where tailList = (tailListExpr' (List list))
 
 headList :: Expr -> Expr
 headList (List []) =  (List [])
@@ -283,12 +284,12 @@ headList (List (x:xs)) = x
 function :: Pred -> Environment -> Environment --update the closure environment on predicate
 function (Member (Var str) (List(x:xs))) env = reassign env str x --is this reassign or update
 
-  
+
 functionM :: Expr -> Environment -> Maybe Expr --get value for the expression, in what env and why ?
 functionM (Var str) env = case lookup str env of
                                 Just x -> Just x
                                 Nothing ->  Nothing
-                                
+
 
 
 
@@ -301,9 +302,9 @@ evalExprInComp env Nothing = Nothing
 evalExprInComp env (Just (list)) = Just (head list)
 
 evalCEK :: State -> State
-evalCEK ((Var x),env,k) = (e',env',k) 
+evalCEK ((Var x),env,k) = (e',env',k)
                     where (e',env') = getValueBinding x env
-                  
+
 -- Rule for terminated evaluations
 evalCEK (v,env,[]) | isValue v = (v,env,[])
 
