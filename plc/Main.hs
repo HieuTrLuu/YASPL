@@ -6,6 +6,11 @@ import Tokens
 import Grammar
 import Helper
 
+data Frame = HApp Expr Environment | AppH Expr deriving (Show,Eq)
+           
+type Kontinuation = [ Frame ]
+type State = (Expr,Environment,Kontinuation)
+
 main = do
      argsList <- getArgs
      f <- readFile (head argsList)
@@ -215,22 +220,23 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
 eval' ((Lam str e), env) = ((Cl str e newEnv),env)
   where newEnv = update env str e 
 
--- eval' (App (Lam x e1) e2, env) = eval' (eval e1 (reassign env x (eval e2 env)), env) 
+eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env ) 
 
-eval' ((App (Lam str e) e') ,env) = eval' ((App (Cl str e newEnv) (fst $ eval' (e',newEnv))),env)
-  where newEnv = (update env str e)
-  -- where newExpr = getValueBinding (update env' str e2)
+-- eval' (App (Lam str1 (Lam str2 e)) e1, env) = eval (App (Cl str e newEnv),env) 
+--   where newEnv = (update env str1 expr1)
 
-eval' ((App (Cl str e' env') e),env) = eval' (App value e,env)
-  where value = fst $ getValueBinding str env'
+-- eval' ((App (Cl str' e' env') (Lam str e)),env) = eval' (App e (Cl str e env'),env)
+--   where value = fst $ getValueBinding str env'
 
-eval' ((App e (Cl str e' env'),env)) = eval' (App e value,env)
-  where value = fst $ getValueBinding str env'
+-- eval' ((App (Cl str' e' env') e),env) = (getValueBinding str' env)
 
 
+-- eval' ((App e (Cl str e' env'),env)) = eval' (App e value,env)
+--   where value = fst $ getValueBinding str env'
 
 
-eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env)
+
+-- eval' (App e1 e2, env) = eval' (App (eval e1 env) e2, env)
 
 
 eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
@@ -239,23 +245,8 @@ eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str
 eval' (Comp expr ((Member (Var str') e'):xs) , env) = eval' ((Comp newExpr xs),env)
   where newExpr = App (Lam str' expr) e'  
                                                                
-
-
-  
-
--- eval' (Comp expr (Member (Var str') e2):xs) = (eval (Comp newExpr xs),env)
---   where newExpr = App (Lam str' expr) e2
-
 eval' (Comp (List (x:xs)) ((Prop e):[]), env) | e == True_ = (List (x:xs),env) 
                                               | otherwise = (List (x:xs),env)
-  -- where remainder = fst $ eval'(Comp (List xs) ((Prop (Lam str e)):[]), env)
-  --       newList = (combineList (List (x:xs)) (remainder))
-  -- | e == True_ = (newList, env)
-  -- | e == False_ = (remainder, env)
-
-
--- eval' ((Comp (Pair (List a) (List b)) []),env) = (convertListPair (Pair (List a) (List b)),env)
-
 eval' ((Comp e []),env) = eval' (e,env)
 
 convertListPair :: Expr -> Expr
@@ -275,6 +266,17 @@ headList (List []) =  (List [])
 headList (List (x:xs)) = x
 
 
+evalCEK :: State -> State
+evalCEK ((Lam x e),env,k) = ((Cl x e env), env, k)
+evalCEK ((App e1 e2),env,k) = (e1,env, (HApp e2 env) : k)
+evalCEK (v,env1,(HApp e env2):k ) | isValue v = (e, env2, (AppH v) : k)
+evalCEK (v,env1,(AppH (Cl x e env2) ) : k )  = (e, update env2 x v, k)
+evalCEK (a,b,c) = (a,b,c)
+
+evalLoop :: (Expr,Environment) -> (Expr,Environment)
+evalLoop (e,env)  = evalLoop' (e,[],[])
+  where evalLoop' (e,env,k) = if (e' == e) then (e',env') else evalLoop' (e',env',k')
+                       where (e',env',k') = evalCEK (e,env,k) 
 
 
 evalMember :: Pred -> Maybe [Expr]
@@ -316,5 +318,5 @@ evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) 
 
 
 
-
-
+buffer :: Expr
+buffer = (App (App (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))) (Int_ 1)) (Int_ 11))
