@@ -225,7 +225,6 @@ eval' ((Lam str t e), env) = ((Cl str t e newEnv),env)
 eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env )
 
 
-
 filterMember :: Pred -> Bool
 filterMember (Member e1 e2) = True
 filterMember (Prop e) = False

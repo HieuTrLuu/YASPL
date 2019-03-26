@@ -20,6 +20,12 @@ tokens :-
   "tail"                        {\p s -> T p TokenTail}
   "fst"                        {\p s -> T p TokenFst}
   "snd"                        {\p s -> T p TokenSnd}
+  "last"                        {\p s -> T p TokenLast}
+  "init"                        {\p s -> T p TokenInit}
+  "length"                        {\p s -> T p TokenLength}
+  "elem"                        {\p s -> T p TokenElem}
+  "take"                        {\p s -> T p TokenTake}
+  "drop"                        {\p s -> T p TokenDrop}
   "true"                        {\p s -> T p TokenTrue}
   "false"                       {\p s -> T p TokenFalse}
   "if"                          {\p s -> T p TokenIf}
@@ -124,6 +130,12 @@ data TToken =
     TokenTypeInt |
     TokenTypeFloat |
     TokenTypeBool |
+    TokenLast |
+    TokenInit |
+    TokenElem |
+    TokenTake |
+    TokenDrop |
+    TokenLength |
     TokenEOL
     deriving (Eq, Show)
 

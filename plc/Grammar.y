@@ -15,6 +15,12 @@ import GHC.Generics (Generic, Generic1)
     tail     { T _ TokenTail  }
     fst     { T _ TokenFst  }
     snd     { T _ TokenSnd  }
+    last    { T _ TokenLast  }
+    init    { T _ TokenInit  }
+    length  { T _ TokenLength  }
+    elem    { T _ TokenElem  }
+    take    { T _ TokenTake  }
+    drop    { T _ TokenDrop  }
     lam    { T _ TokenLambda }
     string { T _ (TokenString $$) }
     ident  { T _ (TokenIdent $$) }
@@ -142,6 +148,12 @@ Expr : Expr Expr %prec APP          {App $1 $2}
      | reverse Expr              {Reverse $2}
      | head Expr                 {Head $2}
      | tail Expr                 {Tail $2}
+     | last Expr                 {Last $2}
+     | init Expr                 {Init $2}
+     | elem Expr Expr            {Elem $2 $3}
+     | take Expr Expr            {Take $2 $3}
+     | drop Expr Expr            {Drop $2 $3}
+     | length Expr               {Length $2}
      | fst Expr                  {Fst $2}
      | snd Expr                  {Snd $2}
 
@@ -205,8 +217,9 @@ data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr E
           | LessEq Expr Expr | MoreEq Expr Expr | Equal Expr Expr | NEqual Expr Expr
           | App Expr Expr | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr
           | Var String | And Expr Expr | Or Expr Expr
-          | Head Expr | Tail Expr | Fst Expr | Snd Expr
-          | Zip Expr Expr | Reverse Expr
+          | Head Expr | Tail Expr | Last Expr | Init Expr | Length Expr | Reverse Expr
+          | Elem Expr Expr | Take Expr Expr | Drop Expr Expr | Zip Expr Expr
+          | Fst Expr | Snd Expr
           | Cl String Type Expr Environment
           deriving (Show,Eq)
 
