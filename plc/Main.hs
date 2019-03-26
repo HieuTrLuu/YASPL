@@ -7,7 +7,13 @@ import Tokens
 import Grammar
 import Helper
 
-data Frame = HApp Expr Environment | AppH Expr deriving (Show,Eq)
+data Frame = HCompare Expr Environment 
+           | CompareH Expr
+           | HAdd Expr Environment | AddH Expr
+           | HPair Expr Environment | PairH Expr
+           | FstH | SndH 
+           | HIf Expr Expr | HLet String Expr 
+           | HApp Expr Environment | AppH Expr deriving (Show,Eq)
            
 type Kontinuation = [ Frame ]
 type State = (Expr,Environment,Kontinuation)
@@ -155,6 +161,7 @@ isValue (Int_ x) = True
 isValue (Float_ x) = True
 isValue True_ = True
 isValue False_ = True
+isValue (Pair e1 e2) = isValue e1 && isValue e2
 isValue (Ident a) = True
 isValue (Cl _ _ _ ) = True
 isValue _ = False
@@ -213,11 +220,8 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
 eval' ((Lam str e), env) = ((Cl str e newEnv),env)
   where newEnv = update env str e 
 
-eval' (App (Var str) e2, env ) = eval' $ evalLoop (App expr e2, env ) 
-  where expr = fst $ getValueBinding str env
-
-eval' (App e1 (Var str), env ) = eval' $ evalLoop (App e1 expr, env ) 
-  where expr = fst $ getValueBinding str env  
+-- eval' ((Cl str (Lam str' e') newEnv),env) = eval' (Lam str' e'),newEnv) 
+--   where newEnv = update env str e 
 
 eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env ) 
          
@@ -316,6 +320,38 @@ evalExprInComp env Nothing = Nothing
 evalExprInComp env (Just (list)) = Just (head list)
 
 evalCEK :: State -> State
+evalCEK ((Var x),env,k) = (e',env',k) 
+                    where (e',env') = getValueBinding x env
+                  
+-- Rule for terminated evaluations
+evalCEK (v,env,[]) | isValue v = (v,env,[])
+
+-- Evaluation rules for less than operator
+evalCEK ((Int_ n),env1,(HCompare e env2):k) = (e,env2,(CompareH (Int_ n)) : k)
+evalCEK ((Int_ m),env,(CompareH (Int_ n)):k) | n < m = (True_,env,k)
+                                             | otherwise = (False_,env,k)
+
+-- Evaluation rules for plus operator
+evalCEK ((Add e1 e2),env,k) = (e1,env,(HAdd e2 env):k)
+evalCEK ((Int_ n),env1,(HAdd e env2):k) = (e,env2,(AddH (Int_ n)) : k)
+evalCEK ((Int_ m),env,(AddH (Int_ n)):k) = (Int_ (n + m),env,k)
+
+-- Evaluation rules for projections
+-- evalCEK ((Fst e1),env,k) = (e1,env, FstH : k)
+-- evalCEK ((Snd e1),env,k) = (e1,env, SndH : k)
+evalCEK ((Pair v w),env, FstH:k) | isValue v && isValue w = ( v , env , k)
+evalCEK ((Pair v w),env, SndH:k) | isValue v && isValue w = ( w , env , k)
+
+-- Evaluation rules for pairs
+evalCEK ((Pair e1 e2),env,k) = (e1,env,(HPair e2 env):k)
+evalCEK (v,env1,(HPair e env2):k) | isValue v = (e,env2,(PairH v) : k)
+evalCEK (w,env,(PairH v):k) | isValue w = ( (Pair v w),env,k)
+
+-- Evaluation rules for if-then-else
+evalCEK ((If e1 e2 e3),env,k) = (e1,env,(HIf e2 e3):k)
+evalCEK (True_,env,(HIf e2 e3):k) = (e2,env,k)
+evalCEK (False_,env,(HIf e2 e3):k) = (e3,env,k)
+
 evalCEK ((Lam x e),env,k) = ((Cl x e env), env, k)
 evalCEK ((App e1 e2),env,k) = (e1,env, (HApp e2 env) : k)
 evalCEK (v,env1,(HApp e env2):k ) | isValue v = (e, env2, (AppH v) : k)
@@ -366,4 +402,19 @@ evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) 
 
 
 prog :: Prog
-prog = [("start",[Assign (Def "last" (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))))),Assign (Def "list" (List [Int_ 0,Int_ 1,Int_ 2,Int_ 3,Int_ 4,Int_ 5])),Assign (Def "test" (App (App (Var "last") (Int_ 1)) (Int_ 2)))])]
+prog = [("start",[Assign (Def "last" (App (App (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))) (Int_ 1)) (Int_ 2)))])]
+
+prog1 ::Prog
+prog1 = [("start",[Assign (Def "last" (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))))),Assign (Def "testLast" (App (App (Var "last") (Int_ 1)) (Int_ 2)))])]
+
+
+-- prog = [("test",Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))),("_LINENUM_",Int_ 0),
+-- ("last",Cl "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))) [("x",Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))),("_LINENUM_",Int_ 0)])
+--this must evaluate furthter
+
+
+-- ("last",Cl "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))) --env: [("x",Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))),("_LINENUM_",Int_ 0)]),("_LINENUM_",Int_ 0)]
+
+-- [("testLast",Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))),
+-- ("_LINENUM_",Int_ 0),
+-- ("last",Cl "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))) [("x",Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))),("_LINENUM_",Int_ 0)])]
