@@ -1,6 +1,7 @@
 module Main where
 import System.Environment
 import Control.Applicative
+import Control.Monad
 import Data.List.Split
 import Tokens
 import Grammar
@@ -164,7 +165,7 @@ isValue _ = False
 
 --TODO: need to embedded with type checker
 eval' :: (Expr, Environment) -> (Expr, Environment)
-eval' ((Pair (List a) (List v)),env) = (convertListPair (Pair (List a) (List v)),env)
+-- eval' ((Pair (List a) (List v)),env) = (convertListPair (Pair (List a) (List v)),env)
 eval' (Int_ a, env) = (Int_ a, env)
 eval' (Float_ a, env) = (Float_ a, env)
 eval' (True_, env) = (True_, env)
@@ -226,6 +227,23 @@ eval' (Comp (List (x:xs)) ((Prop e):[]), env) | e == True_ = (List (x:xs),env)
                                               | otherwise = (List (x:xs),env)
 eval' ((Comp e []),env) = eval' (e,env)
 
+filterMember :: Pred -> Bool
+filterMember (Member e1 e2) = True
+filterMember (Prop e) = False
+
+liftFilter :: Monad m => (a -> Bool) -> m [a] -> m [a]
+liftFilter pred = liftM (filter pred)
+
+
+testCase = (Comp (Add (Var "x") (Var "y")) [Member (Var "x") (Var "list"),Member (Var "y") (Var "list"),Prop (Equal (Var "x") (Var "y"))])
+testPred = [Member (Var "x") (Var "list"),Member (Var "y") (Var "list"),Prop (Equal (Var "x") (Var "y"))]
+
+-- (fmap head e2)
+-- (fmap function listMember)
+
+
+
+
 convertListPair :: Expr -> Expr
 convertListPair (Pair (List list1) (List list2)) = List listOfPair
   where listOfPair = convertHelp list1 list2
@@ -238,6 +256,36 @@ convertHelp (x:xs) (y:ys) = (Pair x y):(convertHelp xs ys)
 headList :: Expr -> Expr 
 headList (List []) =  (List [])
 headList (List (x:xs)) = x
+
+
+-- getAsInt :: String -> Environment -> Int
+-- getAsInt k env = case lookup k env of
+--                    Just (Int_ x) -> x
+--                    Nothing      -> error (k++" not defined.")
+
+function :: Pred -> Environment -> Environment
+function (Member (Var str) (List(x:xs))) env = reassign env str x --is this reassign or update
+
+  
+functionM :: Expr -> Environment -> Maybe Expr
+functionM (Var str) env = case lookup str env of
+                                Just x -> Just x
+                                Nothing ->  Nothing
+
+listOfmembership =  (filter filterMember testPred) --list of membership
+listOfenv = (map (\x -> function env x) listOfmembership) --create a list of environment
+
+lookUpSpecificVarInComp = test expr (map (\x -> function env x) (filter filterMember testPred)) --look up a specific var in comp
+
+
+test :: Expr -> [Environment] -> Maybe [Expr] --should only contain 1 elt
+test expr listEnv = do 
+                      filtered <- mapM (\x -> functionM expr x) listEnv
+                      return filtered
+
+eval' (Comp e listPred) = (test e listOfenv)
+  where membership = filter filterMember listPred
+        listOfenv = (map (\x -> function env x) listOfmembership) --create a list of environment
 
 
 evalCEK :: State -> State
