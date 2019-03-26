@@ -255,15 +255,6 @@ tailListExpr _ = Nothing
 tailListExpr' :: Expr -> Expr
 tailListExpr' (List e) = (List (tail e))
 
-evalPred :: [Pred] -> [Pred]
-evalPred [] = []
-evalPred ((Member e1 (List list)):xs) | (length list) /= 0 = (Member e1 tailList):(evalPred xs)
-                             | otherwise = []
-  where tailList = (tailListExpr' (List list))  
-  
-evalComp :: Expr -> Expr
-evalComp (Comp e list) = 
-
 convertListPair :: Expr -> Expr
 convertListPair (Pair (List list1) (List list2)) = List listOfPair
   where listOfPair = convertHelp list1 list2
@@ -272,6 +263,25 @@ convertHelp :: [Expr] -> [Expr] -> [Expr]
 convertHelp [] [] = []
 convertHelp (x:xs) (y:ys) = (Pair x y):(convertHelp xs ys)
 
+  
+evalComp :: Expr -> Env -> (Expr,Env)
+-- evalComp (Comp e ((Member (Var var ) x):xs) env = Comp ()
+--   where newEnv = function x env -- not the correct one as only contains env for 1st member predicate, I want all of them
+--         updateValue = eval' (App (lam var e) (getValueBinding var newEnv))
+--         map ()
+-- evalComp (Comp e listPred) env = 
+--   where envList = map (\pred -> function pred env) listPred --environment list of stuff envs. Each env contains a binding for a variable
+  -- => How do I do look up for nested lambda which contains multiple expr (Var) in multiple/seperate env
+        -- exprList = map (\env -> e env) envList --e here is the var (e.g y in y <- list)
+
+
+
+
+evalPred :: [Pred] -> [Pred] --move on another elt in list. this function is called when the first elt of the result list is formed
+evalPred [] = []
+evalPred ((Member e1 (List list)):xs) | (length list) /= 0 = (Member e1 tailList):(evalPred xs)
+                                      | otherwise = []
+  where tailList = (tailListExpr' (List list))  
 
 headList :: Expr -> Expr 
 headList (List []) =  (List [])
@@ -282,14 +292,15 @@ function :: Pred -> Environment -> Environment --update the closure environment 
 function (Member (Var str) (List(x:xs))) env = reassign env str x --is this reassign or update
 
   
-functionM :: Expr -> Environment -> Maybe Expr
+functionM :: Expr -> Environment -> Maybe Expr --get value for the expression, in what env and why ?
 functionM (Var str) env = case lookup str env of
                                 Just x -> Just x
                                 Nothing ->  Nothing
+                                
 
 
 
-test :: Expr -> [Environment] -> Maybe [Expr] --output is a single element for the list
+test :: Expr -> [Environment] -> Maybe [Expr] --output is a single element for the list which is the final expression in
 test expr listEnv = do 
                       filtered <- mapM (\x -> functionM expr x) listEnv
                       return filtered
@@ -311,13 +322,13 @@ evalLoop (e,env)  = evalLoop' (e,[],[])
                        where (e',env',k') = evalCEK (e,env,k) 
 
 
-evalMember :: Pred -> Maybe [Expr]
-evalMember (Member e1 (List (x:xs))) = Just (x:xs) -- in case e1 is (Var str) e2 is List [expr] TODO: catch the exception using Monad
-evalMember (Member _ _ ) = Nothing
+-- evalMember :: Pred -> Maybe [Expr]
+-- evalMember (Member e1 (List (x:xs))) = Just (x:xs) -- in case e1 is (Var str) e2 is List [expr] TODO: catch the exception using Monad
+-- evalMember (Member _ _ ) = Nothing
 
-evalProp :: Pred -> Maybe Expr -> Maybe Expr
-evalProp (Prop e) (Just (List list)) = (Just (List [ (App e x) | x <- list ]))
-evalProp _ _ = Nothing
+-- evalProp :: Pred -> Maybe Expr -> Maybe Expr
+-- evalProp (Prop e) (Just (List list)) = (Just (List [ (App e x) | x <- list ]))
+-- evalProp _ _ = Nothing
 
 evalArith :: Expr -> Expr -> Environment -> (Int -> Int -> Int) -> (Expr, Environment)
 evalArith (Int_ e1) (Int_ e2) env f = (Int_ (f e1 e2),env)
