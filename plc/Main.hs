@@ -248,6 +248,30 @@ testPred = [Member (Var "x") (Var "list"),Member (Var "y") (Var "list"),Prop (Eq
 -- (fmap function listMember)
 
 
+-- testMbre :: Pred a => [a] -> [a]
+-- testMbre [] = []
+-- testMbre x:(predList) | length list == 0 = []
+--                       | otherwise  = (Member a (List xs)):(testMbre listPred)
+-- testMbre (Member a (List (x:xs))):(listPred)
+lengthListExpr :: Expr -> Maybe Int
+lengthListExpr (List e) = Just (length e)
+lengthListExpr _ = Nothing
+
+tailListExpr :: Expr -> Maybe Expr
+tailListExpr (List e) = Just (List (tail e))
+tailListExpr _ = Nothing
+
+
+evalPred :: [Pred] -> [Pred]
+evalPred [] = []
+evalPred ((Member e1 e2):xs) | (lengthListExpr e2) /= 0 = (Member e1 tailList):(evalPred xs)
+                             | otherwise = []
+  where tailList = do 
+                    case tailListExpr e2 of
+                      Nothing -> return (List [])
+                      Just n -> return n
+                     
+  
 
 
 convertListPair :: Expr -> Expr
@@ -262,16 +286,10 @@ convertHelp (x:xs) (y:ys) = (Pair x y):(convertHelp xs ys)
 headList :: Expr -> Expr 
 headList (List []) =  (List [])
 headList (List (x:xs)) = x
+ 
 
-testMbre :: Pred a => [a] -> [a]
-testMbre [] = []
-
--- testMbre (Member _ (List [])):(what) = [] 
--- testMbre (Member _ (List (x:xs))):(listPred) = (Member _ (List xs)):(testMbre listPred)
-
-function :: Pred -> Environment -> Environment
-function (Member (Var str) (List(x:xs))) env = reassign env str x 
---is this reassign or update
+function :: Pred -> Environment -> Environment --update the closure environment on predicate
+function (Member (Var str) (List(x:xs))) env = reassign env str x --is this reassign or update
 
 -- mbre :: [Pred] -> [Pred]
 -- mbre (Member _ (List [])):(_) = [] 
@@ -284,15 +302,22 @@ functionM (Var str) env = case lookup str env of
                                 Just x -> Just x
                                 Nothing ->  Nothing
 
+-- testMbre :: Pred a => [a] -> [a]
+-- testMbre [] = []
+-- testMbre x:(predList) | length list == 0 = []
+--                       | otherwise  = (Member a (List xs)):(testMbre listPred)
+-- testMbre (Member a (List (x:xs))):(listPred)
 
 
 
-test :: Expr -> [Environment] -> Maybe [Expr] --should only contain 1 elt
+test :: Expr -> [Environment] -> Maybe [Expr] --output is a single element for the list
 test expr listEnv = do 
                       filtered <- mapM (\x -> functionM expr x) listEnv
                       return filtered
 
-
+evalExprInComp :: Environment -> Maybe [Expr] -> Maybe Expr
+evalExprInComp env Nothing = Nothing
+evalExprInComp env (Just (list)) = Just (head list)
 
 evalCEK :: State -> State
 evalCEK ((Lam x e),env,k) = ((Cl x e env), env, k)
@@ -348,3 +373,4 @@ evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) 
 
 buffer :: Expr
 buffer = (App (App (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))) (Int_ 1)) (Int_ 11))
+
