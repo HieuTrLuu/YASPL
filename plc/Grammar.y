@@ -166,7 +166,7 @@ type Sect = (String, Block)
 
 type Block = [Statement]
 
-data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type
+data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type | TAny
             deriving (Show,Eq)
 
 type Environment = [(String, Expr)]

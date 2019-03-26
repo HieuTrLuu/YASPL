@@ -8,7 +8,7 @@ import Grammar
 import Helper
 
 data Frame = HApp Expr Environment | AppH Expr deriving (Show,Eq)
-           
+
 type Kontinuation = [ Frame ]
 type State = (Expr,Environment,Kontinuation)
 
@@ -212,18 +212,18 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
 
 
 eval' ((Lam str e), env) = ((Cl str e newEnv),env)
-  where newEnv = update env str e 
+  where newEnv = update env str e
 
-eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env ) 
+eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env )
 
 
 -- eval' (Comp (Var str) ((Member (Var str') (List (x:xs))):[]) , env) | str == str' = (List (x:xs), env)
 --                                                                     | otherwise = (List [], env)
 
 -- eval' (Comp expr ((Member (Var str') e'):xs) , env) = eval' ((Comp newExpr xs),env)
---   where newExpr = App (Lam str' expr) e'  
-                                                               
--- eval' (Comp (List (x:xs)) ((Prop e):[]), env) | e == True_ = (List (x:xs),env) 
+--   where newExpr = App (Lam str' expr) e'
+
+-- eval' (Comp (List (x:xs)) ((Prop e):[]), env) | e == True_ = (List (x:xs),env)
 --                                               | otherwise = (List (x:xs),env)
 -- eval' ((Comp e []),env) = eval' (e,env)
 
@@ -259,10 +259,10 @@ evalPred :: [Pred] -> [Pred]
 evalPred [] = []
 evalPred ((Member e1 (List list)):xs) | (length list) /= 0 = (Member e1 tailList):(evalPred xs)
                              | otherwise = []
-  where tailList = (tailListExpr' (List list))  
-  
-evalComp :: Expr -> Expr
-evalComp (Comp e list) = 
+  where tailList = (tailListExpr' (List list))
+
+--evalComp :: Expr -> Expr
+--evalComp (Comp e list) =
 
 convertListPair :: Expr -> Expr
 convertListPair (Pair (List list1) (List list2)) = List listOfPair
@@ -273,15 +273,15 @@ convertHelp [] [] = []
 convertHelp (x:xs) (y:ys) = (Pair x y):(convertHelp xs ys)
 
 
-headList :: Expr -> Expr 
+headList :: Expr -> Expr
 headList (List []) =  (List [])
 headList (List (x:xs)) = x
- 
+
 
 function :: Pred -> Environment -> Environment --update the closure environment on predicate
 function (Member (Var str) (List(x:xs))) env = reassign env str x --is this reassign or update
 
-  
+
 functionM :: Expr -> Environment -> Maybe Expr
 functionM (Var str) env = case lookup str env of
                                 Just x -> Just x
@@ -290,7 +290,7 @@ functionM (Var str) env = case lookup str env of
 
 
 test :: Expr -> [Environment] -> Maybe [Expr] --output is a single element for the list
-test expr listEnv = do 
+test expr listEnv = do
                       filtered <- mapM (\x -> functionM expr x) listEnv
                       return filtered
 
@@ -308,7 +308,7 @@ evalCEK (a,b,c) = (a,b,c)
 evalLoop :: (Expr,Environment) -> (Expr,Environment)
 evalLoop (e,env)  = evalLoop' (e,[],[])
   where evalLoop' (e,env,k) = if (e' == e) then (e',env') else evalLoop' (e',env',k')
-                       where (e',env',k') = evalCEK (e,env,k) 
+                       where (e',env',k') = evalCEK (e,env,k)
 
 
 evalMember :: Pred -> Maybe [Expr]
@@ -352,4 +352,3 @@ evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) 
 
 buffer :: Expr
 buffer = (App (App (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))) (Int_ 1)) (Int_ 11))
-
