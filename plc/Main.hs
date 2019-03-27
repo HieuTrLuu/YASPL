@@ -30,6 +30,7 @@ main = do
      input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
      t <- pure (checkProgType p [])
      env <- t `deepseq` pure (start p)
+     print env
      execute p env input
 
 libFunctions :: Environment
@@ -191,9 +192,11 @@ eval' (Exponent e1 e2, env) = evalArith e1 e2 env (^)
 
 eval' (Cons e1 (List e2), env) = (List (eval e1 env:e2), env)
 eval' (Cons e1 e2, env) = eval' (Cons e1 (eval e2 env), env)
+
 eval' (Append (List e1) (List e2), env) = eval' (List (e1++e2), env)
 eval' (Append a@(List e1) e2, env) = eval' (Append a (eval e2 env), env)
 eval' (Append e1 b@(List e2), env) = eval' (Append (eval e1 env) b, env)
+
 eval' (Index (List e1) (Int_ e2), env) = eval' (e1!!e2, env)
 eval' (Index (List e1) e2, env) = eval' (Index (List e1) (eval e2 env), env)
 eval' (Index e1 (Int_ e2), env) = eval' (Index (eval e1 env) (Int_ e2), env)
@@ -255,7 +258,7 @@ eval' (Reverse e, env) = eval' (Reverse (eval e env), env)
 eval' (Zip (List l1) (List l2), env) = (List (evalZip l1 l2), env)
 eval' (Zip e1 e2, env) = eval' (Zip (eval e1 env) (eval e2 env), env)
 eval' (Fst (Pair e _), env) = (e, env)
-eval' (Fst e, env) = eval' (Fst (eval e env), env)
+eval' (Fst e, env) = eval' (Fst (eval(Fst (eval e env), env)))
 eval' (Snd (Pair _ e), env) = (e, env)
 eval' (Snd e, env) = eval' (Snd (eval e env), env)
 eval' (Sum (List es), env) = ((evalSum es), env)
@@ -299,6 +302,18 @@ mapEnvForMemberExpr (Member (Var str) (List list) ) env = newEnv
   where newEnv = ((update env str (head list)): (mapEnvForMemberExpr (Member (Var str) (List ( tail list)) )) env)
 mapEnvForMemberExpr (Member (Var str) (Var str') ) env = mapEnvForMemberExpr (Member (Var str) expr ) env
   where expr = fst $ getValueBinding str' env
+
+mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (List []) ) env = []
+mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (List list) ) env = newEnv
+  where newEnv = ((update env str1 (fstPair $ head list)): (update env str2 (sndPair $ head list)): (mapEnvForMemberExpr (Member (Var str) (List ( tail list)) )) env)
+
+fstPair :: Expr -> Expr
+fstPair (Pair e1 e2) = e1
+
+sndPair :: Expr -> Expr
+sndPair (Pair e1 e2) = e2
+
+
 mapEnvForMemberList :: [Pred] -> Environment -> [[Environment]]
 mapEnvForMemberList predList env = envListofList
   where envListofList = map (\x -> mapEnvForMemberExpr x env) predList

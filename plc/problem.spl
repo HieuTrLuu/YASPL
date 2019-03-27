@@ -1,5 +1,7 @@
 start{
-  x = [1,10];
-  y = [2,10,10];
-  test = {a +b | a<-x, b<-y, a == b};
+  x = [1,2,3,4,5,6,7,8,9,10];
+  y = [0,1,2,3,4,5,6,7,8,9];
+  buffer = zip x y;
+  bufferList = { a*b | (a,b) <-buffer }; 
+
 }
