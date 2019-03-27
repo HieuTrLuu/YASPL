@@ -217,11 +217,14 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
                        | eval e2 env == True_ = (True_, env)
                        | otherwise = (False_, env)
 
--- eval' ((Comp e predList),env) = (List lists,env)
---   where memberPred = filter filterMember predList
---         newEnv = mapEnvForMember memberList env
---         lists = mapM eval' (App e (getValueBinding (getVar newEnv )))
-                  
+eval' ((Comp e predList),env) = (List expr,env)
+  where memberPred = filter filterMember predList
+        propPred = filter (\x -> not $ filterMember x) predList
+        newEnvList = mapEnvForMemberList predList env
+        finalListEnv = processesEnvs newEnvList
+        expr = map (\x -> fst $ eval' (e,x) ) finalListEnv
+        
+        
 
 eval' ((Lam str t e), env) = ((Cl str t e newEnv),env)
   where newEnv = update env str e
@@ -232,13 +235,33 @@ eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env )
 filterMember :: Pred -> Bool
 filterMember (Member e1 e2) = True
 filterMember (Prop e) = False
+        
+mapEnvForMemberExpr :: Pred -> Environment -> [Environment]
+mapEnvForMemberExpr (Member (Var str) (List []) ) env= []
+mapEnvForMemberExpr (Member (Var str) (List list) ) env = newEnv
+  where newEnv = ((update env str (head list)): (mapEnvForMemberExpr (Member (Var str) (List ( tail list)) )) env)
 
-mapEnvForMember :: [Pred] -> Environment -> Environment
-mapEnvForMember [] env = []
-mapEnvForMember ((Member (Var str) list ):xs) env = newEnv++(mapEnvForMember xs newEnv)
-  where newEnv = (update env str list)
+mapEnvForMemberList :: [Pred] -> Environment -> [[Environment]]
+mapEnvForMemberList predList env = envListofList
+  where envListofList = map (\x -> mapEnvForMemberExpr x env) predList
+        
+processesEnvs :: [[Environment]] -> [Environment]
+processesEnvs [] = []
+processesEnvs (x:[]) = x
+processesEnvs (x:xs) = [ a ++ b |a<-x, b<- head xs ]
+
+-- combineListEnv :: [[Environment]] -> [Environment]
+-- combineListEnv [] = []
+-- combineListEnv (x:xs) = (++) x <$> (combine xs)
+
+-- combine (x:xs) = x <*> (combine xs)
+
+
 
   
+-- convertEnvFromListToNum :: Environment -> [Environment]
+-- convertEnvFromListToNum 
+
 liftFilter :: Monad m => (a -> Bool) -> m [a] -> m [a]
 liftFilter pred = liftM (filter pred)
 
@@ -266,14 +289,14 @@ convertHelp [] [] = []
 convertHelp (x:xs) (y:ys) = (Pair x y):(convertHelp xs ys)
 
   
-evalComp :: Expr -> Environment -> (Expr,Environment)
--- evalComp (Comp e ((Member (Var var ) x):xs) env = Comp ()
---only deal with member predicate
-evalComp (Comp e memberList) env = (finalListExpr, env)
-  where newEnv = (updateCompEnv memberList env) -- not the correct one as only contains env for 1st member predicate, I want all of them
-        updateValue = fst $ eval' (e,newEnv) 
-        newPredList = evalPred memberList
-        finalListExpr = mergeListType (List (updateValue:[])) (fst $ evalComp (Comp e newPredList) env)
+-- evalComp :: Expr -> Environment -> (Expr,Environment)
+-- -- evalComp (Comp e ((Member (Var var ) x):xs) env = Comp ()
+-- --only deal with member predicate
+-- evalComp (Comp e memberList) env = (finalListExpr, env)
+--   where newEnv = (updateCompEnv memberList env) -- not the correct one as only contains env for 1st member predicate, I want all of them
+--         updateValue = fst $ eval' (e,newEnv) 
+--         newPredList = evalPred memberList
+--         finalListExpr = mergeListType (List (updateValue:[])) (fst $ evalComp (Comp e newPredList) env)
         
         
         
@@ -409,3 +432,5 @@ prog = [("start",[Assign (Def "last" (List [Int_ 11])),Assign (Def "test" (Comp 
 
 comp :: Expr 
 comp = (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (List [Int_ 1,Int_ 2]),Member (Var "b") (List [Int_ 10,Int_ 11])])
+predList :: [Pred]
+predList = [Member (Var "a") (List [Int_ 1,Int_ 2]),Member (Var "b") (List [Int_ 10,Int_ 11])]
