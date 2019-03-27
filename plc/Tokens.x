@@ -26,6 +26,8 @@ tokens :-
   "elem"                        {\p s -> T p TokenElem}
   "take"                        {\p s -> T p TokenTake}
   "drop"                        {\p s -> T p TokenDrop}
+  "sum"                         {\p s -> T p TokenSum}
+  "product"                     {\p s -> T p TokenProduct}
   "true"                        {\p s -> T p TokenTrue}
   "false"                       {\p s -> T p TokenFalse}
   "if"                          {\p s -> T p TokenIf}
@@ -136,6 +138,8 @@ data TToken =
     TokenTake |
     TokenDrop |
     TokenLength |
+    TokenSum |
+    TokenProduct |
     TokenEOL
     deriving (Eq, Show)
 

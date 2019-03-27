@@ -248,7 +248,26 @@ eval' (Fst (Pair e _), env) = (e, env)
 eval' (Fst e, env) = eval' (Fst (eval e env), env)
 eval' (Snd (Pair _ e), env) = (e, env)
 eval' (Snd e, env) = eval' (Snd (eval e env), env)
+eval' (Sum (List es), env) = ((evalSum es), env)
+eval' (Sum e, env) = eval' (Sum (eval e env), env)
+eval' (Product (List es), env) = ((evalProduct es), env)
+eval' (Product e, env) = eval' (Product (eval e env), env)
 
+evalSum :: [Expr] -> Expr
+evalSum [Int_ x] = Int_ x
+evalSum [Float_ x] = Float_ x
+evalSum (Int_ x:es) = case evalSum es of
+                       Int_ y -> Int_ (x+y)
+evalSum (Float_ x:es) = case evalSum es of
+                         Float_ y -> Float_ (x+y)
+
+evalProduct :: [Expr] -> Expr
+evalProduct [Int_ x] = Int_ x
+evalProduct [Float_ x] = Float_ x
+evalProduct (Int_ x:es) = case evalProduct es of
+                       Int_ y -> Int_ (x*y)
+evalProduct (Float_ x:es) = case evalProduct es of
+                         Float_ y -> Float_ (x*y)
 
 evalZip :: [Expr] -> [Expr] -> [Expr]
 evalZip [] _ = []

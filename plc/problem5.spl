@@ -5,15 +5,15 @@ start{
 
 0-1{
   return $0;
-  seen = seen:$0;
+  seen = seen++[$0];
 }
 
 2+{
-  seen = seen:$0;
-  x = zip seen (reverse fib);
+  seen = seen++$0;
+  x = zip seen fib;
   x = {a*b | (a,b) <- x};
   return (sum x);
-  a = last fibs;
-  b = head (tail (reverse fib));
-  fib = fib:(a+b);
+  a = last fib;
+  b = head (init fib);
+  fib = (a+b):fib;
 }

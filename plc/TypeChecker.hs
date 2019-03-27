@@ -59,10 +59,10 @@ evalType False_ _ = TBool
 evalType (Ident _) _ = TInt
 evalType (Var a) env = case lookup a env of
                         Just t  -> t
-                        Nothing -> error (a++" is not defined\n"++(show env))
+                        Nothing -> error (a++" is not defined")
 
 evalType (List a) env = TList (evalListType a env)
-evalType (Pair e1 e2) env | t1 == t2  = t1
+evalType (Pair e1 e2) env | t1 == t2  = TPair t1 t2
                           | otherwise = error ("Mismatched types in pair: "++(show t1)++" and "++(show t2))
                             where
                              t1 = evalType e1 env
@@ -142,6 +142,71 @@ evalType (Index e1 e2) env | evalType e2 env /= TInt = error "Right hand side of
                            | otherwise = case evalType e1 env of
                                           TList t -> t
                                           _       -> error "!! can only be applied to lists"
+
+evalType (Head e) env = case evalType e env of
+                          TList t -> t
+                          _       -> error "head can only be applied to a list"
+
+evalType (Tail e) env = case evalType e env of
+                          TList t -> TList t
+                          _       -> error "tail can only be applied to a list"
+
+evalType (Last e) env = case evalType e env of
+                          TList t -> t
+                          _       -> error "last can only be applied to a list"
+
+evalType (Init e) env = case evalType e env of
+                          TList t -> TList t
+                          _       -> error "init can only be applied to a list"
+
+evalType (Length e) env = case evalType e env of
+                           TList t -> TInt
+                           _       -> error "Length can only be applied to a list"
+
+evalType (Reverse e) env = case evalType e env of
+                            TList t -> TList t
+                            _       -> error "reverse can only be applied to a list"
+
+evalType (Take e1 e2) env | evalType e1 env /= TInt = error "First argument of take must have type TInt"
+                          | otherwise = case evalType e2 env of
+                                         TList t -> TList t
+                                         _       -> error "Second argument of take must be a list"
+
+evalType (Drop e1 e2) env | evalType e1 env /= TInt = error "First argument of drop must have type TInt"
+                          | otherwise = case evalType e2 env of
+                                         TList t -> TList t
+                                         _       -> error "Second argument of drop must be a list"
+
+evalType (Elem e1 e2) env = case evalType e2 env of
+                             TList t -> let t1 = evalType e1 env in if t1 == t then TBool else error ("First argument of elem has type "++(show t1)++" but second argument is a list of type "++(show t))
+                             _       -> error "Second argument of elem must be a list"
+
+evalType (Zip e1 e2) env = case evalType e1 env of
+                            TList t1 -> case evalType e2 env of
+                                        TList t2 -> TList (TPair t1 t2)
+                                        _       -> error "Second argument of zip is not a list"
+                            _       -> error "First argument of zip is not a list"
+evalType (Fst e) env = case evalType e env of
+                          TPair a b -> a
+                          _       -> error "fst can only be applied to a pair"
+
+evalType (Snd e) env = case evalType e env of
+                          TPair a b -> b
+                          _       -> error ("snd can only be applied to a pair")
+
+evalType (Sum e) env = case evalType e env of
+                        TList TInt -> TInt
+                        TList TFloat -> TFloat
+                        TList t -> error ("sum cannot be applied to lists of type "++(show t))
+                        _ -> error "sum can only be applied to lists"
+
+evalType (Product e) env = case evalType e env of
+                            TList TInt -> TInt
+                            TList TFloat -> TFloat
+                            TList t -> error ("product cannot be applied to lists of type "++(show t))
+                            _ -> error "product can only be applied to lists"
+
+
 
 evalType _ _ = error "Unknown error"
 

@@ -15,6 +15,8 @@ import GHC.Generics (Generic, Generic1)
     tail     { T _ TokenTail  }
     fst     { T _ TokenFst  }
     snd     { T _ TokenSnd  }
+    sum     { T _ TokenSum }
+    product { T _ TokenProduct }
     last    { T _ TokenLast  }
     init    { T _ TokenInit  }
     length  { T _ TokenLength  }
@@ -72,6 +74,7 @@ import GHC.Generics (Generic, Generic1)
 
 %nonassoc '>' '>=' '<' '<='
 %nonassoc '==' '!='
+%nonassoc t_int t_bool t_float
 %left '&&' '||'
 %left '++'
 %right ':'
@@ -91,6 +94,7 @@ import GHC.Generics (Generic, Generic1)
 %nonassoc if then else
 %nonassoc '[' ']' '{' '}' '(' ')'
 %nonassoc string int float true false ident
+%right sum product length reverse fst snd zip head tail last init elem take drop
 %nonassoc APP
 
 %%
@@ -114,7 +118,21 @@ Assignment : string '=' Expr        {Def $1 $3}
            | string '*=' Expr       {MultVal $1 $3}
            | string '/=' Expr       {DivVal $1 $3}
 
-Expr : Expr Expr %prec APP          {App $1 $2}
+Expr : zip Expr Expr             {Zip $2 $3}
+     | reverse Expr              {Reverse $2}
+     | head Expr                 {Head $2}
+     | tail Expr                 {Tail $2}
+     | last Expr                 {Last $2}
+     | init Expr                 {Init $2}
+     | elem Expr Expr            {Elem $2 $3}
+     | take Expr Expr            {Take $2 $3}
+     | drop Expr Expr            {Drop $2 $3}
+     | length Expr               {Length $2}
+     | fst Expr                  {Fst $2}
+     | snd Expr                  {Snd $2}
+     | sum Expr                  {Sum $2}
+     | product Expr              {Product $2}
+     | Expr Expr %prec APP          {App $1 $2}
      | int                          {Int_ $1}
      | float                        {Float_ $1}
      | true                         {True_}
@@ -144,18 +162,6 @@ Expr : Expr Expr %prec APP          {App $1 $2}
      | Expr '||' Expr            {Or $1 $3}
      | Expr '!!' Expr            {Index $1 $3}
      | '{' Expr '|' PredList '}'    {Comp $2 $4}
-     | zip Expr Expr             {Zip $2 $3}
-     | reverse Expr              {Reverse $2}
-     | head Expr                 {Head $2}
-     | tail Expr                 {Tail $2}
-     | last Expr                 {Last $2}
-     | init Expr                 {Init $2}
-     | elem Expr Expr            {Elem $2 $3}
-     | take Expr Expr            {Take $2 $3}
-     | drop Expr Expr            {Drop $2 $3}
-     | length Expr               {Length $2}
-     | fst Expr                  {Fst $2}
-     | snd Expr                  {Snd $2}
 
 T : t_int {TInt}
   | t_bool {TBool}
@@ -219,7 +225,7 @@ data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr E
           | Var String | And Expr Expr | Or Expr Expr
           | Head Expr | Tail Expr | Last Expr | Init Expr | Length Expr | Reverse Expr
           | Elem Expr Expr | Take Expr Expr | Drop Expr Expr | Zip Expr Expr
-          | Fst Expr | Snd Expr
+          | Fst Expr | Snd Expr | Sum Expr | Product Expr
           | Cl String Type Expr Environment
           deriving (Show,Eq)
 
