@@ -240,7 +240,8 @@ mapEnvForMemberExpr :: Pred -> Environment -> [Environment]
 mapEnvForMemberExpr (Member (Var str) (List []) ) env= []
 mapEnvForMemberExpr (Member (Var str) (List list) ) env = newEnv
   where newEnv = ((update env str (head list)): (mapEnvForMemberExpr (Member (Var str) (List ( tail list)) )) env)
-
+mapEnvForMemberExpr (Member (Var str) (Var str') ) env = mapEnvForMemberExpr (Member (Var str) expr ) env
+  where expr = fst $ getValueBinding str' env
 mapEnvForMemberList :: [Pred] -> Environment -> [[Environment]]
 mapEnvForMemberList predList env = envListofList
   where envListofList = map (\x -> mapEnvForMemberExpr x env) predList
@@ -420,17 +421,17 @@ evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) 
 mergeListType :: Expr -> Expr -> Expr 
 mergeListType (List e1) (List e2) = List (e1++e2)
 
-prog :: Prog
-prog = [("start",[Assign (Def "last" (List [Int_ 11])),Assign (Def "test" (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (Var "last"),Member (Var "b") (Var "last")]))])]
-
-
+-- prog :: Prog
+-- prog = [("start",[Assign (Def "last" (List [Int_ 11])),Assign (Def "test" (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (Var "last"),Member (Var "b") (Var "last")]))])]
 -- prog1 ::Prog
 -- prog1 = [("start",[Assign (Def "last" (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))))),Assign (Def "testLast" (App (App (Var "last") (Int_ 1)) (Int_ 2)))])]
-
 -- (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (Var "last"),Member (Var "b") (Var "last")])
 -- eval' ((Comp (Add (Var "a") (Var "b")) [Member (Var "a") (List [Int_ 1]),Member (Var "b") (List [Int_ 1])]),[])
 
-comp :: Expr 
-comp = (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (List [Int_ 1,Int_ 2]),Member (Var "b") (List [Int_ 10,Int_ 11])])
-predList :: [Pred]
-predList = [Member (Var "a") (List [Int_ 1,Int_ 2]),Member (Var "b") (List [Int_ 10,Int_ 11])]
+-- comp :: Expr 
+-- comp = (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (List [Int_ 1,Int_ 2]),Member (Var "b") (List [Int_ 10,Int_ 11])])
+-- predList :: [Pred]
+-- predList = [Member (Var "a") (List [Int_ 1,Int_ 2]),Member (Var "b") (List [Int_ 10,Int_ 11])]
+
+prog :: Prog
+prog = [("start",[Assign (Def "x" (List [Int_ 1,Int_ 2])),Assign (Def "y" (List [Int_ 10,Int_ 11])),Assign (Def "test" (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (Var "x"),Member (Var "b") (Var "y")]))])];
