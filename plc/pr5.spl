@@ -10,11 +10,9 @@ start{
 
 0+{
   seen = seen++[$0];
-  test = reverse fib;
-  x = zip seen test;
+  x = zip seen (reverse fib);
   x = {(fst z) * (snd z) | z <- x};
-  r = sum x;
-  return r;
+  return (sum x);
   a = last fib;
   b = head (tail (reverse fib));
   fib = fib++[(a+b)];
