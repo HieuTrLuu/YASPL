@@ -1,0 +1,8 @@
+start{
+  pair = (6, 6);
+}
+
+0+{
+  pair = if (snd pair) > 5 then (6, $0) else ($0, 6);
+  return (fst pair);
+}

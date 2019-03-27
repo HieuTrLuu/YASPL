@@ -1,6 +1,8 @@
 {
 module Grammar where
 import Tokens
+import Control.DeepSeq
+import GHC.Generics (Generic, Generic1)
 }
 
 %name parseStreamLang
@@ -13,6 +15,14 @@ import Tokens
     tail     { T _ TokenTail  }
     fst     { T _ TokenFst  }
     snd     { T _ TokenSnd  }
+    sum     { T _ TokenSum }
+    product { T _ TokenProduct }
+    last    { T _ TokenLast  }
+    init    { T _ TokenInit  }
+    length  { T _ TokenLength  }
+    elem    { T _ TokenElem  }
+    take    { T _ TokenTake  }
+    drop    { T _ TokenDrop  }
     lam    { T _ TokenLambda }
     string { T _ (TokenString $$) }
     ident  { T _ (TokenIdent $$) }
@@ -64,6 +74,7 @@ import Tokens
 
 %nonassoc '>' '>=' '<' '<='
 %nonassoc '==' '!='
+%nonassoc t_int t_bool t_float
 %left '&&' '||'
 %left '++'
 %right ':'
@@ -83,6 +94,7 @@ import Tokens
 %nonassoc if then else
 %nonassoc '[' ']' '{' '}' '(' ')'
 %nonassoc string int float true false ident
+%right sum product length reverse fst snd zip head tail last init elem take drop
 %nonassoc APP
 
 %%
@@ -106,7 +118,21 @@ Assignment : string '=' Expr        {Def $1 $3}
            | string '*=' Expr       {MultVal $1 $3}
            | string '/=' Expr       {DivVal $1 $3}
 
-Expr : Expr Expr %prec APP          {App $1 $2}
+Expr : zip Expr Expr             {Zip $2 $3}
+     | reverse Expr              {Reverse $2}
+     | head Expr                 {Head $2}
+     | tail Expr                 {Tail $2}
+     | last Expr                 {Last $2}
+     | init Expr                 {Init $2}
+     | elem Expr Expr            {Elem $2 $3}
+     | take Expr Expr            {Take $2 $3}
+     | drop Expr Expr            {Drop $2 $3}
+     | length Expr               {Length $2}
+     | fst Expr                  {Fst $2}
+     | snd Expr                  {Snd $2}
+     | sum Expr                  {Sum $2}
+     | product Expr              {Product $2}
+     | Expr Expr %prec APP          {App $1 $2}
      | int                          {Int_ $1}
      | float                        {Float_ $1}
      | true                         {True_}
@@ -136,12 +162,6 @@ Expr : Expr Expr %prec APP          {App $1 $2}
      | Expr '||' Expr            {Or $1 $3}
      | Expr '!!' Expr            {Index $1 $3}
      | '{' Expr '|' PredList '}'    {Comp $2 $4}
-     | zip Expr Expr             {Zip $2 $3}
-     | reverse Expr              {Reverse $2}
-     | head Expr                 {Head $2}
-     | tail Expr                 {Tail $2}
-     | fst Expr                  {Fst $2}
-     | snd Expr                  {Snd $2}
 
 T : t_int {TInt}
   | t_bool {TBool}
@@ -176,6 +196,15 @@ type Block = [Statement]
 data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type | TAny
             deriving (Show,Eq)
 
+instance NFData Type where
+  rnf TInt = ()
+  rnf TFloat = ()
+  rnf TBool = ()
+  rnf TAny = ()
+  rnf (TList t) = rnf t
+  rnf (TPair t1 t2) = let a = rnf t1 in rnf t2
+  rnf (TFun t1 t2) = let a = rnf t1 in rnf t2
+
 type Environment = [(String, Expr)]
 type TEnvironment = [(String, Type)]
 
@@ -194,8 +223,9 @@ data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr E
           | LessEq Expr Expr | MoreEq Expr Expr | Equal Expr Expr | NEqual Expr Expr
           | App Expr Expr | Index Expr Expr | Comp Expr [Pred] | Exponent Expr Expr
           | Var String | And Expr Expr | Or Expr Expr
-          | Head Expr | Tail Expr | Fst Expr | Snd Expr
-          | Zip Expr Expr | Reverse Expr
+          | Head Expr | Tail Expr | Last Expr | Init Expr | Length Expr | Reverse Expr
+          | Elem Expr Expr | Take Expr Expr | Drop Expr Expr | Zip Expr Expr
+          | Fst Expr | Snd Expr | Sum Expr | Product Expr
           | Cl String Type Expr Environment
           deriving (Show,Eq)
 
