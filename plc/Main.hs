@@ -217,10 +217,11 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
                        | eval e2 env == True_ = (True_, env)
                        | otherwise = (False_, env)
 
-eval' ((Comp e predList),env) = 
-  where memberPred = filter filterMember predList
-        newEnv = mapEnvForMember memberList env
-        lists = 
+-- eval' ((Comp e predList),env) = (List lists,env)
+--   where memberPred = filter filterMember predList
+--         newEnv = mapEnvForMember memberList env
+--         lists = mapM eval' (App e (getValueBinding (getVar newEnv )))
+                  
 
 eval' ((Lam str t e), env) = ((Cl str t e newEnv),env)
   where newEnv = update env str e
@@ -268,10 +269,12 @@ convertHelp (x:xs) (y:ys) = (Pair x y):(convertHelp xs ys)
 evalComp :: Expr -> Environment -> (Expr,Environment)
 -- evalComp (Comp e ((Member (Var var ) x):xs) env = Comp ()
 --only deal with member predicate
-evalComp (Comp e memberList) env = (List (updateValue:[]),env)
+evalComp (Comp e memberList) env = (finalListExpr, env)
   where newEnv = (updateCompEnv memberList env) -- not the correct one as only contains env for 1st member predicate, I want all of them
         updateValue = fst $ eval' (e,newEnv) 
         newPredList = evalPred memberList
+        finalListExpr = mergeListType (List (updateValue:[])) (fst $ evalComp (Comp e newPredList) env)
+        
         
         
         
@@ -391,14 +394,18 @@ evalBool (Int_ e1) e2 env f = evalBool (Int_ e1) (fst (eval' (e2, env))) env f
 evalBool e1 (Int_ e2) env f = evalBool (fst (eval' (e1, env))) (Int_ e2) env f
 evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) env f
 
-
-
+mergeListType :: Expr -> Expr -> Expr 
+mergeListType (List e1) (List e2) = List (e1++e2)
 
 prog :: Prog
 prog = [("start",[Assign (Def "last" (List [Int_ 11])),Assign (Def "test" (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (Var "last"),Member (Var "b") (Var "last")]))])]
+
 
 -- prog1 ::Prog
 -- prog1 = [("start",[Assign (Def "last" (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))))),Assign (Def "testLast" (App (App (Var "last") (Int_ 1)) (Int_ 2)))])]
 
 -- (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (Var "last"),Member (Var "b") (Var "last")])
 -- eval' ((Comp (Add (Var "a") (Var "b")) [Member (Var "a") (List [Int_ 1]),Member (Var "b") (List [Int_ 1])]),[])
+
+comp :: Expr 
+comp = (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (List [Int_ 1,Int_ 2]),Member (Var "b") (List [Int_ 10,Int_ 11])])
