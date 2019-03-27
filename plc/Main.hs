@@ -217,6 +217,10 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
                        | eval e2 env == True_ = (True_, env)
                        | otherwise = (False_, env)
 
+eval' ((Comp e predList),env) = 
+  where memberPred = filter filterMember predList
+        newEnv = mapEnvForMember memberList env
+        lists = 
 
 eval' ((Lam str t e), env) = ((Cl str t e newEnv),env)
   where newEnv = update env str e
@@ -224,11 +228,16 @@ eval' ((Lam str t e), env) = ((Cl str t e newEnv),env)
 eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env ) 
        
 
-
 filterMember :: Pred -> Bool
 filterMember (Member e1 e2) = True
 filterMember (Prop e) = False
 
+mapEnvForMember :: [Pred] -> Environment -> Environment
+mapEnvForMember [] env = []
+mapEnvForMember ((Member (Var str) list ):xs) env = newEnv++(mapEnvForMember xs newEnv)
+  where newEnv = (update env str list)
+
+  
 liftFilter :: Monad m => (a -> Bool) -> m [a] -> m [a]
 liftFilter pred = liftM (filter pred)
 
@@ -256,18 +265,29 @@ convertHelp [] [] = []
 convertHelp (x:xs) (y:ys) = (Pair x y):(convertHelp xs ys)
 
   
--- evalComp :: Expr -> Env -> (Expr,Env)
+evalComp :: Expr -> Environment -> (Expr,Environment)
 -- evalComp (Comp e ((Member (Var var ) x):xs) env = Comp ()
---   where newEnv = function x env -- not the correct one as only contains env for 1st member predicate, I want all of them
---         updateValue = eval' (App (lam var e) (getValueBinding var newEnv))
---         map ()
+--only deal with member predicate
+evalComp (Comp e memberList) env = (List (updateValue:[]),env)
+  where newEnv = (updateCompEnv memberList env) -- not the correct one as only contains env for 1st member predicate, I want all of them
+        updateValue = fst $ eval' (e,newEnv) 
+        newPredList = evalPred memberList
+        
+        
+        
+
 -- evalComp (Comp e listPred) env = 
 --   where envList = map (\pred -> function pred env) listPred --environment list of stuff envs. Each env contains a binding for a variable
-  -- => How do I do look up for nested lambda which contains multiple expr (Var) in multiple/seperate env
-        -- exprList = map (\env -> e env) envList --e here is the var (e.g y in y <- list)
+--   -- => How do I do look up for nested lambda which contains multiple expr (Var) in multiple/seperate env
+--         exprList = map (\env -> e env) envList --e here is the var (e.g y in y <- list)
 
 
+updateCompEnv :: [Pred] -> Environment -> Environment
+updateCompEnv [] _ = []
+updateCompEnv (x:xs) env = (function x env)++(updateCompEnv xs env)
 
+-- combineEnv :: Environment -> Environment -> Environment
+-- combineEnv env1 env2 = 
 
 evalPred :: [Pred] -> [Pred] --move on another elt in list. this function is called when the first elt of the result list is formed
 evalPred [] = []
@@ -374,8 +394,11 @@ evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) 
 
 
 
--- prog :: Prog
--- prog = [("start",[Assign (Def "last" (App (App (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10)))) (Int_ 1)) (Int_ 2)))])]
+prog :: Prog
+prog = [("start",[Assign (Def "last" (List [Int_ 11])),Assign (Def "test" (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (Var "last"),Member (Var "b") (Var "last")]))])]
 
 -- prog1 ::Prog
 -- prog1 = [("start",[Assign (Def "last" (Lam "x" (Lam "y" (Add (Add (Var "x") (Var "y")) (Int_ 10))))),Assign (Def "testLast" (App (App (Var "last") (Int_ 1)) (Int_ 2)))])]
+
+-- (Comp (Add (Var "a") (Var "b")) [Member (Var "a") (Var "last"),Member (Var "b") (Var "last")])
+-- eval' ((Comp (Add (Var "a") (Var "b")) [Member (Var "a") (List [Int_ 1]),Member (Var "b") (List [Int_ 1])]),[])
