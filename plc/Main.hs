@@ -283,7 +283,6 @@ evalZip :: [Expr] -> [Expr] -> [Expr]
 evalZip [] _ = []
 evalZip _ [] = []
 evalZip (x:xs) (y:ys) = (Pair x y):evalZip xs ys
->>>>>>> origin/libfunc
 
 filterMember :: Pred -> Bool
 filterMember (Member e1 e2) = True
@@ -457,5 +456,14 @@ evalBool (Int_ e1) e2 env f = evalBool (Int_ e1) (fst (eval' (e2, env))) env f
 evalBool e1 (Int_ e2) env f = evalBool (fst (eval' (e1, env))) (Int_ e2) env f
 evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) env f
 
+function :: Pred -> Environment -> Environment --update the closure environment on predicate
+function (Member (Var str) (List(x:xs))) env = reassign env str x --is this reassign or update
+
+  
+functionM :: Expr -> Environment -> Maybe Expr --get value for the expression, in what env and why ?
+functionM (Var str) env = case lookup str env of
+                                Just x -> Just x
+                                Nothing ->  Nothing
+                                
 mergeListType :: Expr -> Expr -> Expr 
 mergeListType (List e1) (List e2) = List (e1++e2)
