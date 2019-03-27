@@ -258,7 +258,7 @@ eval' (Reverse e, env) = eval' (Reverse (eval e env), env)
 eval' (Zip (List l1) (List l2), env) = (List (evalZip l1 l2), env)
 eval' (Zip e1 e2, env) = eval' (Zip (eval e1 env) (eval e2 env), env)
 eval' (Fst (Pair e _), env) = (e, env)
-eval' (Fst e, env) = eval' (Fst (eval(Fst (eval e env), env)))
+eval' (Fst e, env) = eval' (Fst (eval e env), env)
 eval' (Snd (Pair _ e), env) = (e, env)
 eval' (Snd e, env) = eval' (Snd (eval e env), env)
 eval' (Sum (List es), env) = ((evalSum es), env)
@@ -305,7 +305,11 @@ mapEnvForMemberExpr (Member (Var str) (Var str') ) env = mapEnvForMemberExpr (Me
 
 mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (List []) ) env = []
 mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (List list) ) env = newEnv
-  where newEnv = ((update env str1 (fstPair $ head list)): (update env str2 (sndPair $ head list)): (mapEnvForMemberExpr (Member (Var str) (List ( tail list)) )) env)
+  where newEnv = ((update env str1 (fstPair $ head list)): (update env str2 (sndPair $ head list)): (mapEnvForMemberExpr (Member  (Pair (Var str1) (Var str2)) (List ( tail list)) )) env)
+mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (Var str') ) env = mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2)) expr ) env
+  where expr = fst $ getValueBinding str' env
+        
+
 
 fstPair :: Expr -> Expr
 fstPair (Pair e1 e2) = e1
