@@ -222,8 +222,38 @@ eval' (Or e1 e2, env)  | eval e1 env == True_ = (True_, env)
 eval' ((Lam str t e), env) = ((Cl str t e newEnv),env)
   where newEnv = update env str e
 
-eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env )
+eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env)
 
+eval' (Head (List es), env) = (head es, env)
+eval' (Head e, env) = eval' (Head (eval e env), env)
+eval' (Tail (List es), env) = (List (tail es), env)
+eval' (Tail e, env) = eval' (Tail (eval e env), env)
+eval' (Last (List es), env) = (last es, env)
+eval' (Last e, env) = eval' (Last (eval e env), env)
+eval' (Init (List es), env) = (List (init es), env)
+eval' (Init e, env) = eval' (Init (eval e env), env)
+eval' (Elem e1 (List es), env) = (if e1 `elem` es then True_ else False_, env)
+eval' (Elem e1 e2, env) = eval' (Elem (eval e1 env) (eval e2 env), env)
+eval' (Take (Int_ x) (List es), env) = (List (take x es), env)
+eval' (Take e1 e2, env) = eval' (Take (eval e1 env) (eval e2 env), env)
+eval' (Drop (Int_ x) (List es), env) = (List (drop x es), env)
+eval' (Drop e1 e2, env) = eval' (Drop (eval e1 env) (eval e2 env), env)
+eval' (Length (List es), env) = (Int_ (length es), env)
+eval' (Length e, env) = eval' (Length (eval e env), env)
+eval' (Reverse (List es), env) = (List (reverse es), env)
+eval' (Reverse e, env) = eval' (Reverse (eval e env), env)
+eval' (Zip (List l1) (List l2), env) = (List (evalZip l1 l2), env)
+eval' (Zip e1 e2, env) = eval' (Zip (eval e1 env) (eval e2 env), env)
+eval' (Fst (Pair e _), env) = (e, env)
+eval' (Fst e, env) = eval' (Fst (eval e env), env)
+eval' (Snd (Pair _ e), env) = (e, env)
+eval' (Snd e, env) = eval' (Snd (eval e env), env)
+
+
+evalZip :: [Expr] -> [Expr] -> [Expr]
+evalZip [] _ = []
+evalZip _ [] = []
+evalZip (x:xs) (y:ys) = (Pair x y):evalZip xs ys
 
 filterMember :: Pred -> Bool
 filterMember (Member e1 e2) = True
