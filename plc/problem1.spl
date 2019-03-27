@@ -1,8 +1,0 @@
-start{
-  last = 0;
-}
-
-0+{
-  return last;
-  last = $0;
-}

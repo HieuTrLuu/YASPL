@@ -29,8 +29,9 @@ main = do
      input <- getContents
      input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
      t <- pure (checkProgType p [])
-     env <- t `deepseq` pure (start p)
-     print env
+    --  env <- t `deepseq` pure (start p)
+    --  print p
+     env <- pure (start p)
      execute p env input
 
 libFunctions :: Environment
@@ -197,6 +198,7 @@ eval' (Append (List e1) (List e2), env) = eval' (List (e1++e2), env)
 eval' (Append a@(List e1) e2, env) = eval' (Append a (eval e2 env), env)
 eval' (Append e1 b@(List e2), env) = eval' (Append (eval e1 env) b, env)
 
+
 eval' (Index (List e1) (Int_ e2), env) = eval' (e1!!e2, env)
 eval' (Index (List e1) e2, env) = eval' (Index (List e1) (eval e2 env), env)
 eval' (Index e1 (Int_ e2), env) = eval' (Index (eval e1 env) (Int_ e2), env)
@@ -305,7 +307,7 @@ mapEnvForMemberExpr (Member (Var str) (Var str') ) env = mapEnvForMemberExpr (Me
 
 mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (List []) ) env = []
 mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (List list) ) env = newEnv
-  where newEnv = ((update env str1 (fstPair $ head list)): (update env str2 (sndPair $ head list)): (mapEnvForMemberExpr (Member  (Pair (Var str1) (Var str2)) (List ( tail list)) )) env)
+  where newEnv = ((update env str1 (fstPair $ head list)): (update env str2 (sndPair $ head list)): (mapEnvForMemberExpr (Member  (Pair (Var str1) (Var str2)) (List (tail list)) )) env)
 mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (Var str') ) env = mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2)) expr ) env
   where expr = fst $ getValueBinding str' env
         
@@ -478,3 +480,8 @@ evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) 
                                 
 mergeListType :: Expr -> Expr -> Expr 
 mergeListType (List e1) (List e2) = List (e1++e2)
+
+prog :: Prog
+prog = [("start",[Assign (Def "fib" (List [Int_ 1,Int_ 1]))]),("0-1",[Return [Ident 0],Assign (Def "seen" (List [Ident 0]))]),("2+",[Assign (Def "seen" (Append (Var "seen") (Ident 0))),Assign (Def "test" (Reverse (Var "fib"))),Assign (Def "x" (Zip (Var "seen") (Var "test"))),Assign (Def "x" (Comp (Mult (Var "a") (Var "b")) [Member (Pair (Var "a") (Var "b")) (Var "x")])),Return [Sum (Var "x")],Assign (Def "a" (Last (Var "fibs"))),Assign (Def "b" (Head (Tail (Reverse (Var "fib"))))),Assign (Def "fib" (Cons (Var "fib") (Add (Var "a") (Var "b"))))])]
+input :: [[Int]]
+input = [[1],[0],[0],[0],[0],[0],[0]]

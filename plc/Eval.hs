@@ -268,3 +268,13 @@ p >>= f = P (\inp -> case parse p inp of
                         [(v,out)] -> parse (f v) out)
 
 
+
+evalType (Append e1 e2) env = case (t1, t2) of
+                               (TList t3, TList t4) -> if t3==t4 then t1 else
+                                                          if t3 == TAny then (TList t4) else
+                                                              if t4 == TAny then (TList t3) else
+                                                                  error ("Cannot append list of type "++(show t4)++" to list of type "++(show t3))
+                               _                    -> error ((show t1)++" ++ "++(show t2)++" is not defined")
+                               where
+                                 t1 = evalType e1 env
+                                 t2 = evalType e2 env
