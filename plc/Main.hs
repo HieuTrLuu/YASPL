@@ -221,8 +221,9 @@ eval' ((Comp e predList),env) = (List expr,env)
   where memberPred = filter filterMember predList
         propPred = filter (\x -> not $ filterMember x) predList
         newEnvList = mapEnvForMemberList predList env
-        finalListEnv = processesEnvs newEnvList
-        expr = map (\x -> fst $ eval' (e,x) ) finalListEnv
+        memberEnvList = processesEnvs newEnvList
+        finalEnvList = filter (\x -> ((checkGuard propPred x) == True_)) memberEnvList
+        expr = map (\x -> fst $ eval' (e,x) ) finalEnvList
         
         
 
@@ -235,6 +236,11 @@ eval' (App e1 e2, env ) = eval' $ evalLoop (App e1 e2, env )
 filterMember :: Pred -> Bool
 filterMember (Member e1 e2) = True
 filterMember (Prop e) = False
+
+checkGuard :: [Pred] -> Environment -> Expr
+checkGuard [] _ = True_
+checkGuard ((Prop x):xs) env = fst $ eval' ((And (fst (eval' (x,env))) (checkGuard xs env)),env)
+
         
 mapEnvForMemberExpr :: Pred -> Environment -> [Environment]
 mapEnvForMemberExpr (Member (Var str) (List []) ) env= []
