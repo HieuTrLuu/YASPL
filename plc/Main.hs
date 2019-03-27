@@ -165,17 +165,15 @@ isValue (Int_ x) = True
 isValue (Float_ x) = True
 isValue True_ = True
 isValue False_ = True
+isValue (List []) = True
+isValue (List (x:xs)) = (isValue x) && (isValue (List xs))
 isValue (Pair e1 e2) = isValue e1 && isValue e2
 isValue (Ident a) = True
 isValue (Cl _ _ _  _) = True
 isValue _ = False
 
 -- Function to iterate the small step reduction to termination
-
-
---TODO: need to embedded with type checker
 eval' :: (Expr, Environment) -> (Expr, Environment)
--- eval' ((Pair (List a) (List v)),env) = (convertListPair (Pair (List a) (List v)),env)
 eval' (Int_ a, env) = (Int_ a, env)
 eval' (Float_ a, env) = (Float_ a, env)
 eval' (True_, env) = (True_, env)
@@ -329,24 +327,10 @@ processesEnvs [] = []
 processesEnvs (x:[]) = x
 processesEnvs (x:xs) = [ a ++ b |a<-x, b<- head xs ]
 
--- combineListEnv :: [[Environment]] -> [Environment]
--- combineListEnv [] = []
--- combineListEnv (x:xs) = (++) x <$> (combine xs)
-
--- combine (x:xs) = x <*> (combine xs)
-
-
-
-  
--- convertEnvFromListToNum :: Environment -> [Environment]
--- convertEnvFromListToNum 
-
 liftFilter :: Monad m => (a -> Bool) -> m [a] -> m [a]
 liftFilter pred = liftM (filter pred)
 
 
-testCase = (Comp (Add (Var "x") (Var "y")) [Member (Var "x") (Var "list"),Member (Var "y") (Var "list"),Prop (Equal (Var "x") (Var "y"))])
-testPred = [Member (Var "x") (Var "list"),Member (Var "y") (Var "list"),Prop (Equal (Var "x") (Var "y"))]
 
 lengthListExpr :: Expr -> Maybe Int
 lengthListExpr (List e) = Just (length e)
@@ -387,7 +371,7 @@ headList (List (x:xs)) = x
 
 
 function :: Pred -> Environment -> Environment --update the closure environment on predicate
-function (Member (Var str) (List(x:xs))) env = reassign env str x --is this reassign or update
+function (Member (Var str) (List(x:xs))) env = reassign env str x --is this reassign or update ? => assign
 
 
 functionM :: Expr -> Environment -> Maybe Expr --get value for the expression, in what env and why ?
@@ -408,7 +392,10 @@ evalExprInComp env (Just (list)) = Just (head list)
 
 evalCEK :: State -> State
 evalCEK ((Var x),env,k) = (e',env',k)
-                    where (e',env') = getValueBinding x env
+  where (e',env') = getValueBinding x env
+
+evalCEK ((Ident x), env,k) = (e', env,k)
+  where (e',env') = getValueBinding ("$"++(show x)) env
 
 -- Rule for terminated evaluations
 evalCEK (v,env,[]) | isValue v = (v,env,[])
@@ -481,7 +468,9 @@ evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) 
 mergeListType :: Expr -> Expr -> Expr 
 mergeListType (List e1) (List e2) = List (e1++e2)
 
-prog :: Prog
-prog = [("start",[Assign (Def "fib" (List [Int_ 1,Int_ 1]))]),("0-1",[Return [Ident 0],Assign (Def "seen" (List [Ident 0]))]),("2+",[Assign (Def "seen" (Append (Var "seen") (Ident 0))),Assign (Def "test" (Reverse (Var "fib"))),Assign (Def "x" (Zip (Var "seen") (Var "test"))),Assign (Def "x" (Comp (Mult (Var "a") (Var "b")) [Member (Pair (Var "a") (Var "b")) (Var "x")])),Return [Sum (Var "x")],Assign (Def "a" (Last (Var "fibs"))),Assign (Def "b" (Head (Tail (Reverse (Var "fib"))))),Assign (Def "fib" (Cons (Var "fib") (Add (Var "a") (Var "b"))))])]
-input :: [[Int]]
-input = [[1],[0],[0],[0],[0],[0],[0]]
+
+-- pre-declared variable for testing purposes
+-- prog :: Prog
+-- prog = [("start",[Assign (Def "fib" (List [Int_ 1,Int_ 1]))]),("0-1",[Return [Ident 0],Assign (Def "seen" (List [Ident 0]))]),("2+",[Assign (Def "seen" (Append (Var "seen") (Ident 0))),Assign (Def "test" (Reverse (Var "fib"))),Assign (Def "x" (Zip (Var "seen") (Var "test"))),Assign (Def "x" (Comp (Mult (Var "a") (Var "b")) [Member (Pair (Var "a") (Var "b")) (Var "x")])),Return [Sum (Var "x")],Assign (Def "a" (Last (Var "fibs"))),Assign (Def "b" (Head (Tail (Reverse (Var "fib"))))),Assign (Def "fib" (Cons (Var "fib") (Add (Var "a") (Var "b"))))])]
+-- input :: [[Int]]
+-- input = [[1],[0],[0],[0],[0],[0],[0]]
