@@ -30,8 +30,6 @@ main = do
      input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
      t <- pure (checkProgType p [])
      env <- t `deepseq` pure (start p)
-    --  print p
-     env <- pure (start p)
      execute p env input
 
 libFunctions :: Environment
@@ -228,8 +226,8 @@ eval' ((Comp e predList),env) = (List expr,env)
         memberEnvList = processesEnvs newEnvList
         finalEnvList = filter (\x -> ((checkGuard propPred x) == True_)) memberEnvList
         expr = map (\x -> fst $ eval' (e,x) ) finalEnvList
-        
-        
+
+
 
 eval' ((Lam str t e), env) = ((Cl str t e newEnv),env)
   where newEnv = update env str e
@@ -295,7 +293,7 @@ checkGuard :: [Pred] -> Environment -> Expr
 checkGuard [] _ = True_
 checkGuard ((Prop x):xs) env = fst $ eval' ((And (fst (eval' (x,env))) (checkGuard xs env)),env)
 
-        
+
 mapEnvForMemberExpr :: Pred -> Environment -> [Environment]
 mapEnvForMemberExpr (Member (Var str) (List []) ) env= []
 
@@ -312,7 +310,7 @@ mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (List list) ) env = ne
 
 mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (Var str') ) env = mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2)) expr ) env
   where expr = fst $ getValueBinding str' env
-        
+
 
 
 fstPair :: Expr -> Expr
@@ -325,11 +323,12 @@ sndPair (Pair e1 e2) = e2
 mapEnvForMemberList :: [Pred] -> Environment -> [[Environment]]
 mapEnvForMemberList predList env = envListofList
   where envListofList = map (\x -> mapEnvForMemberExpr x env) predList
-        
+
 processesEnvs :: [[Environment]] -> [Environment]
 processesEnvs [] = []
 processesEnvs (x:[]) = x
 processesEnvs (x:xs) = [ a ++ b |a<-x, b<- head xs ]
+
 
 liftFilter :: Monad m => (a -> Bool) -> m [a] -> m [a]
 liftFilter pred = liftM (filter pred)
@@ -361,7 +360,7 @@ updateCompEnv [] _ = []
 updateCompEnv (x:xs) env = (function x env)++(updateCompEnv xs env)
 
 -- combineEnv :: Environment -> Environment -> Environment
--- combineEnv env1 env2 = 
+-- combineEnv env1 env2 =
 
 evalPred :: [Pred] -> [Pred] --move on another elt in list. this function is called when the first elt of the result list is formed
 evalPred [] = []
@@ -468,13 +467,7 @@ evalBool (Int_ e1) e2 env f = evalBool (Int_ e1) (fst (eval' (e2, env))) env f
 evalBool e1 (Int_ e2) env f = evalBool (fst (eval' (e1, env))) (Int_ e2) env f
 evalBool e1 e2 env f = evalBool (fst (eval' (e1, env))) (fst (eval' (e2, env))) env f
 
-                                
-mergeListType :: Expr -> Expr -> Expr 
+
+mergeListType :: Expr -> Expr -> Expr
 mergeListType (List e1) (List e2) = List (e1++e2)
 
-
--- pre-declared variable for testing purposes
--- prog :: Prog
--- prog = [("start",[Assign (Def "fib" (List [Int_ 1,Int_ 1]))]),("0-1",[Return [Ident 0],Assign (Def "seen" (List [Ident 0]))]),("2+",[Assign (Def "seen" (Append (Var "seen") (Ident 0))),Assign (Def "test" (Reverse (Var "fib"))),Assign (Def "x" (Zip (Var "seen") (Var "test"))),Assign (Def "x" (Comp (Mult (Var "a") (Var "b")) [Member (Pair (Var "a") (Var "b")) (Var "x")])),Return [Sum (Var "x")],Assign (Def "a" (Last (Var "fibs"))),Assign (Def "b" (Head (Tail (Reverse (Var "fib"))))),Assign (Def "fib" (Cons (Var "fib") (Add (Var "a") (Var "b"))))])]
--- input :: [[Int]]
--- input = [[1],[0],[0],[0],[0],[0],[0]]

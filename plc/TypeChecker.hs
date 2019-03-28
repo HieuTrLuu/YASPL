@@ -136,7 +136,7 @@ evalType (And e1 e2) env | t1 /= TBool || t2 /= TBool = error ((show t2)++" && "
                                                         t1 = evalType e1 env
                                                         t2 = evalType e2 env
 
-evalType (Comp e ps) env = evalType e (predEnv ps env)
+evalType (Comp e ps) env = TList (evalType e (predEnv ps env))
 
 evalType (Index e1 e2) env | evalType e2 env /= TInt = error "Right hand side of !! must have type TInt"
                            | otherwise = case evalType e1 env of
@@ -198,7 +198,7 @@ evalType (Sum e) env = case evalType e env of
                         TList TInt -> TInt
                         TList TFloat -> TFloat
                         TList t -> error ("sum cannot be applied to lists of type "++(show t))
-                        _ -> error "sum can only be applied to lists"
+                        _ -> error "sum can only be applied to list"
 
 evalType (Product e) env = case evalType e env of
                             TList TInt -> TInt
