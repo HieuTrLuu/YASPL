@@ -62,8 +62,7 @@ evalType (Var a) env = case lookup a env of
                         Nothing -> error (a++" is not defined")
 
 evalType (List a) env = TList (evalListType a env)
-evalType (Pair e1 e2) env | t1 == t2  = TPair t1 t2
-                          | otherwise = error ("Mismatched types in pair: "++(show t1)++" and "++(show t2))
+evalType (Pair e1 e2) env = TPair t1 t2
                             where
                              t1 = evalType e1 env
                              t2 = evalType e2 env
