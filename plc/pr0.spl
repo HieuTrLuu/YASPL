@@ -1,21 +1,8 @@
 start{
-  fib = [1, 1];
-  seen = [];
-
-}
-0-1{
-  return $0;
-  seen = [$0];
+  f = 4;
 }
 
 0+{
-  seen = seen++[$0];
-  test = reverse fib;
-  x = zip seen test;
-  x = {(fst z) * (snd z) | z <- x};
-  r = sum x;
+  r = if ((f < 3) && (f > 1)) then 1 else 0;
   return r;
-  a = last fib;
-  b = head (tail (reverse fib));
-  fib = fib++[(a+b)];
 }

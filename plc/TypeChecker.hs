@@ -18,28 +18,28 @@ evalStatementType (Return es) env = evalReturnArgsType es env
 evalAssignmentType :: Assignment -> TEnvironment -> TEnvironment
 evalAssignmentType (Def x e) env = (x, evalType e env):env
 evalAssignmentType (Inc x e) env | t1 /= t2 = error ((show t2)++" does not match type of "++x)
-                                 | t1 /= TInt && t1 /= TFloat = error (x++" cannot be incremented: not a numeric type")
+                                 | t1 /= TInt = error (x++" cannot be incremented: not a number")
                                  | otherwise = env
                                    where
                                      t1 = evalType (Var x) env
                                      t2 = evalType e env
 
 evalAssignmentType (Dec x e) env | t1 /= t2 = error ((show t2)++" does not match type of "++x)
-                                 | t1 /= TInt && t1 /= TFloat = error (x++" cannot be decremented: not a numeric type")
+                                 | t1 /= TInt = error (x++" cannot be decremented: not a number")
                                  | otherwise = env
                                   where
                                     t1 = evalType (Var x) env
                                     t2 = evalType e env
 
 evalAssignmentType (MultVal x e) env | t1 /= t2 = error ((show t2)++" does not match type of "++x)
-                                     | t1 /= TInt && t1 /= TFloat = error (x++" cannot be multiplied: not a numeric type")
+                                     | t1 /= TInt = error (x++" cannot be multiplied: not a number")
                                      | otherwise = env
                                    where
                                      t1 = evalType (Var x) env
                                      t2 = evalType e env
 
 evalAssignmentType (DivVal x e) env | t1 /= t2 = error ((show t2)++" does not match type of "++x)
-                                    | t1 /= TInt && t1 /= TFloat = error (x++" cannot be divided: not a numeric type")
+                                    | t1 /= TInt = error (x++" cannot be divided: not a number")
                                     | otherwise = env
                                    where
                                      t1 = evalType (Var x) env
@@ -53,7 +53,6 @@ evalReturnArgsType (e:es) env | t /= TInt = error "only expressions of type TInt
 
 evalType :: Expr -> TEnvironment -> Type
 evalType (Int_ _) _ = TInt
-evalType (Float_ _) _ = TFloat
 evalType True_ _ = TBool
 evalType False_ _ = TBool
 evalType (Ident _) _ = TInt
@@ -72,7 +71,7 @@ evalType (Sub e1 e2) env = evalArithType (evalType e1 env) (evalType e2 env) "-"
 evalType (Mult e1 e2) env = evalArithType (evalType e1 env) (evalType e2 env) "*"
 evalType (Div e1 e2) env = evalArithType (evalType e1 env) (evalType e2 env) "/"
 evalType (Exponent e1 e2) env | t2 /= TInt = error ((show t1)++" ^ "++(show t2)++" is not defined")
-                              | t1 /= TInt && t1 /= TFloat = error ((show t1)++" ^ "++(show t2)++" is not defined")
+                              | t1 /= TInt = error ((show t1)++" ^ "++(show t2)++" is not defined")
                               | otherwise = t1
                                 where
                                   t1 = evalType e1 env
@@ -123,17 +122,17 @@ evalType (MoreEq e1 e2) env = evalComparisonType (evalType e1 env) (evalType e2 
 evalType (Equal e1 e2) env = evalComparisonType (evalType e1 env) (evalType e2 env) "=="
 evalType (NEqual e1 e2) env = evalComparisonType (evalType e1 env) (evalType e2 env) "!="
 
-evalType (And e1 e2) env | t1 /= TBool || t2 /= TBool = error ((show t2)++" && "++(show e2)++"is not defined.")
-                         | otherwise = TBool
+evalType (And e1 e2) env | (t1 == TBool) && (t2 == TBool) = TBool
+                         | otherwise = error ((show t1)++" && "++(show t2)++" is not defined.")
                            where
                             t1 = evalType e1 env
                             t2 = evalType e2 env
 
-                            evalType (Or e1 e2) env | t1 /= TBool || t2 /= TBool = error ((show t2)++" || "++(show e2)++"is not defined.")
-                                                     | otherwise = TBool
-                                                       where
-                                                        t1 = evalType e1 env
-                                                        t2 = evalType e2 env
+evalType (Or e1 e2) env | t1 == TBool && t2 == TBool = TBool
+                        | otherwise = error ((show t1)++" || "++(show t2)++" is not defined.")
+                           where
+                            t1 = evalType e1 env
+                            t2 = evalType e2 env
 
 evalType (Comp e ps) env = TList (evalType e (predEnv ps env))
 
@@ -195,13 +194,11 @@ evalType (Snd e) env = case evalType e env of
 
 evalType (Sum e) env = case evalType e env of
                         TList TInt -> TInt
-                        TList TFloat -> TFloat
                         TList t -> error ("sum cannot be applied to lists of type "++(show t))
                         _ -> error "sum can only be applied to list"
 
 evalType (Product e) env = case evalType e env of
                             TList TInt -> TInt
-                            TList TFloat -> TFloat
                             TList t -> error ("product cannot be applied to lists of type "++(show t))
                             _ -> error "product can only be applied to lists"
 
@@ -219,16 +216,10 @@ evalListType (e:es) env | t1 == t2  = t1
                             t2 = evalListType es env
 
 evalArithType :: Type -> Type -> String -> Type
-evalArithType TFloat TInt _ = TFloat
-evalArithType TInt TFloat _ = TFloat
-evalArithType TFloat TFloat _ = TFloat
 evalArithType TInt TInt _ = TInt
 evalArithType t1 t2 op = error ((show t1)++" "++op++" "++(show t2)++" is not defined")
 
 evalComparisonType :: Type -> Type -> String -> Type
-evalComparisonType TFloat TInt _ = TBool
-evalComparisonType TInt TFloat _ = TBool
-evalComparisonType TFloat TFloat _ = TBool
 evalComparisonType TInt TInt _ = TBool
 evalComparisonType t1 t2 op = error ((show t1)++" "++op++" "++(show t2)++" is not defined")
 

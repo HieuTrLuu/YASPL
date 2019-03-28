@@ -27,7 +27,6 @@ import GHC.Generics (Generic, Generic1)
     string { T _ (TokenString $$) }
     ident  { T _ (TokenIdent $$) }
     int    { T _ (TokenInt $$) }
-    float  { T _ (TokenFloat $$) }
     true   { T _ TokenTrue }
     false  { T _ TokenFalse  }
     return { T _ TokenReturn  }
@@ -67,14 +66,13 @@ import GHC.Generics (Generic, Generic1)
     '|'    { T _ TokenLine }
     ','    { T _ TokenComma }
     t_int  { T _ TokenTypeInt}
-    t_float  { T _ TokenTypeFloat}
     t_bool  { T _ TokenTypeBool}
     EOL    { T _ TokenEOL }
 
 
 %nonassoc '>' '>=' '<' '<='
 %nonassoc '==' '!='
-%nonassoc t_int t_bool t_float
+%nonassoc t_int t_bool
 %left '&&' '||'
 %left '++'
 %right ':'
@@ -93,7 +91,7 @@ import GHC.Generics (Generic, Generic1)
 %nonassoc return
 %nonassoc if then else
 %nonassoc '[' ']' '{' '}' '(' ')'
-%nonassoc string int float true false ident
+%nonassoc string int true false ident
 %right sum product length reverse fst snd zip head tail last init elem take drop
 %nonassoc APP
 
@@ -134,13 +132,14 @@ Expr : zip Expr Expr             {Zip $2 $3}
      | product Expr              {Product $2}
      | Expr Expr %prec APP          {App $1 $2}
      | int                          {Int_ $1}
-     | float                        {Float_ $1}
      | true                         {True_}
      | false                        {False_}
      | string                       {Var $1}
      | '[' Conts ']'                {List $2}
      | '(' Expr ',' Expr ')'        {Pair $2 $4}
      | ident                        {Ident $1}
+     | Expr '&&' Expr            {And $1 $3}
+     | Expr '||' Expr            {Or $1 $3}
      | Expr '+' Expr                {Add $1 $3}
      | Expr '-' Expr                {Sub $1 $3}
      | Expr '*' Expr                {Mult $1 $3}
@@ -158,14 +157,11 @@ Expr : zip Expr Expr             {Zip $2 $3}
      | Expr '>=' Expr            {MoreEq $1 $3}
      | Expr '==' Expr            {Equal $1 $3}
      | Expr '!=' Expr            {NEqual $1 $3}
-     | Expr '&&' Expr            {And $1 $3}
-     | Expr '||' Expr            {Or $1 $3}
      | Expr '!!' Expr            {Index $1 $3}
      | '{' Expr '|' PredList '}'    {Comp $2 $4}
 
 T : t_int {TInt}
   | t_bool {TBool}
-  | t_float {TFloat}
   | '[' T ']' {TList $2}
   | '(' T ',' T ')' {TPair $2 $4}
 
@@ -193,12 +189,11 @@ type Sect = (String, Block)
 
 type Block = [Statement]
 
-data Type = TInt | TFloat | TBool | TList Type | TPair Type Type | TFun Type Type | TAny
+data Type = TInt | TBool | TList Type | TPair Type Type | TFun Type Type | TAny
             deriving (Show,Eq)
 
 instance NFData Type where
   rnf TInt = ()
-  rnf TFloat = ()
   rnf TBool = ()
   rnf TAny = ()
   rnf (TList t) = rnf t
@@ -216,7 +211,7 @@ data Assignment = Def String Expr | Inc String Expr | Dec String Expr
                 | MultVal String Expr | DivVal String Expr
                 deriving (Eq, Show)
 
-data Expr = Int_ Int | Float_ Float | True_ | False_ | List [Expr] | Pair Expr Expr
+data Expr = Int_ Int | True_ | False_ | List [Expr] | Pair Expr Expr
           | Ident Int | Add Expr Expr | Sub Expr Expr | Mult Expr Expr
           | Div Expr Expr | Mod Expr Expr | Cons Expr Expr | Append Expr Expr
           | If Expr Expr Expr | Lam String Type Expr | Less Expr Expr | More Expr Expr

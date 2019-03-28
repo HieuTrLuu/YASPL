@@ -11,7 +11,6 @@ $alpha = [a-zA-Z]
 tokens :-
   $white+                       ;
   "//".*                        ;
-  $digit+ \. $digit+            {\p s -> T p (TokenFloat (read s))}
   $digit+                       {\p s -> T p (TokenInt (read s))}
   \$ $digit+                    {\p s -> T p (TokenIdent (read (tail s)))}
   "zip"                        {\p s -> T p TokenZip}
@@ -35,7 +34,6 @@ tokens :-
   "else"                        {\p s -> T p TokenElse}
   "return"                      {\p s -> T p TokenReturn}
   "int"                         {\p s -> T p TokenTypeInt}
-  "float"                       {\p s -> T p TokenTypeFloat}
   "bool"                        {\p s -> T p TokenTypeBool}
   "++"                          {\p s -> T p TokenDoubleAdd}
   "--"                          {\p s -> T p TokenDoubleSub}
@@ -89,7 +87,6 @@ data TToken =
     TokenString String|
     TokenIdent Int|
     TokenInt Int|
-    TokenFloat Float|
     TokenTrue |
     TokenFalse |
     TokenReturn |
@@ -130,7 +127,6 @@ data TToken =
     TokenAnd |
     TokenOr |
     TokenTypeInt |
-    TokenTypeFloat |
     TokenTypeBool |
     TokenLast |
     TokenInit |

@@ -162,7 +162,6 @@ updateBlock env x e = (x,e) : env
 -- Checks for terminated expressions
 isValue :: Expr -> Bool
 isValue (Int_ x) = True
-isValue (Float_ x) = True
 isValue True_ = True
 isValue False_ = True
 isValue (Pair e1 e2) = isValue e1 && isValue e2
@@ -177,7 +176,6 @@ isValue _ = False
 eval' :: (Expr, Environment) -> (Expr, Environment)
 -- eval' ((Pair (List a) (List v)),env) = (convertListPair (Pair (List a) (List v)),env)
 eval' (Int_ a, env) = (Int_ a, env)
-eval' (Float_ a, env) = (Float_ a, env)
 eval' (True_, env) = (True_, env)
 eval' (False_, env) = (False_, env)
 eval' (Ident a, env) = getValueBinding ("$"++(show a)) env
@@ -270,19 +268,13 @@ eval' (Product e, env) = eval' (Product (eval e env), env)
 
 evalSum :: [Expr] -> Expr
 evalSum [Int_ x] = Int_ x
-evalSum [Float_ x] = Float_ x
 evalSum (Int_ x:es) = case evalSum es of
                        Int_ y -> Int_ (x+y)
-evalSum (Float_ x:es) = case evalSum es of
-                         Float_ y -> Float_ (x+y)
 
 evalProduct :: [Expr] -> Expr
 evalProduct [Int_ x] = Int_ x
-evalProduct [Float_ x] = Float_ x
 evalProduct (Int_ x:es) = case evalProduct es of
                        Int_ y -> Int_ (x*y)
-evalProduct (Float_ x:es) = case evalProduct es of
-                         Float_ y -> Float_ (x*y)
 
 evalZip :: [Expr] -> [Expr] -> [Expr]
 evalZip [] _ = []
