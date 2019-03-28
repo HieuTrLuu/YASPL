@@ -401,7 +401,8 @@ evalExprInComp env (Just (list)) = Just (head list)
 evalCEK :: State -> State
 evalCEK ((Var x),env,k) = (e',env',k)
                     where (e',env') = getValueBinding x env
-
+evalCEK ((Ident x), env,k) = (e', env,k)
+  where (e',env') = getValueBinding ("$"++(show x)) env
 -- Rule for terminated evaluations
 evalCEK (v,env,[]) | isValue v = (v,env,[])
 
