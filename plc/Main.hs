@@ -29,7 +29,7 @@ main = do
      input <- getContents
      input <- pure (map (map (read :: String->Int) . splitOn " ") (lines input))
      t <- pure (checkProgType p [])
-    --  env <- t `deepseq` pure (start p)
+     env <- t `deepseq` pure (start p)
     --  print p
      env <- pure (start p)
      execute p env input
@@ -298,14 +298,18 @@ checkGuard ((Prop x):xs) env = fst $ eval' ((And (fst (eval' (x,env))) (checkGua
         
 mapEnvForMemberExpr :: Pred -> Environment -> [Environment]
 mapEnvForMemberExpr (Member (Var str) (List []) ) env= []
+
 mapEnvForMemberExpr (Member (Var str) (List list) ) env = newEnv
   where newEnv = ((update env str (head list)): (mapEnvForMemberExpr (Member (Var str) (List ( tail list)) )) env)
+
 mapEnvForMemberExpr (Member (Var str) (Var str') ) env = mapEnvForMemberExpr (Member (Var str) expr ) env
   where expr = fst $ getValueBinding str' env
 
 mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (List []) ) env = []
+
 mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (List list) ) env = newEnv
   where newEnv = ((update env str1 (fstPair $ head list)): (update env str2 (sndPair $ head list)): (mapEnvForMemberExpr (Member  (Pair (Var str1) (Var str2)) (List (tail list)) )) env)
+
 mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2))  (Var str') ) env = mapEnvForMemberExpr (Member (Pair (Var str1) (Var str2)) expr ) env
   where expr = fst $ getValueBinding str' env
         
