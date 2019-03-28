@@ -4,7 +4,7 @@ import Tokens
 import Control.DeepSeq
 import GHC.Generics (Generic, Generic1)
 }
-
+%monad { E } { thenE } { returnE }
 %name parseStreamLang
 %tokentype { Token }
 %error { parseError }
@@ -183,9 +183,26 @@ Pred : Expr '<-' Expr          {Member $1 $3}
      | Expr                         {Prop $1}
 
 {
-parseError :: [Token] -> a
-parseError [] = error "Unknown Parse Error"
-parseError (t:ts) = let (l, c) = tokenPosn t in error ("Parse error at "++show l++":"++show c)
+data E a = Ok a | Failed String
+
+thenE :: E a -> (a -> E b) -> E b
+thenE m k | m == (Ok a) = k a
+	        | m == (Failed e) = Failed e
+
+returnE :: a -> E a
+returnE a = Ok a
+
+failE :: String -> E a
+failE err = Failed err
+
+catchE :: E a -> (String -> E a) -> E a
+catchE m k | m == (Ok a) = OK a
+	         | m == (Failed e) = k e
+
+parseError :: [Token] -> P a
+parseError [] = failE (error "Unknown Parse Error")
+parseError (t:ts) = failE op
+  where op = (let (l, c) = (tokenPosn t in error ("Parse error at "++show l++":"++show c)))
 
 type Prog = [Sect]
 
