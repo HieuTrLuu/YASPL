@@ -1,0 +1,8 @@
+start{
+  buffer = 0;
+}
+
+0+{
+  return (buffer + $0);
+  buffer = $0;
+}
