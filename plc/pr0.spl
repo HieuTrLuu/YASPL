@@ -1,8 +1,8 @@
 start{
-  f = 4;
+  f = [1, 2, 3];
 }
 
 0+{
-  r = if ((f < 3) && (f > 1)) then 1 else 0;
+  r = f!!4;
   return r;
 }
