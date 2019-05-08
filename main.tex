@@ -1,0 +1,136 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Java,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+\usepackage{graphicx, rotating, appendix, color, listings}
+\usepackage[utf8]{inputenc}
+\usepackage{wrapfig}
+\usepackage{parskip}
+\usepackage{makecell, array}
+\usepackage[margin=1.4in]{geometry}
+
+\title{YASPL - Yet Another Stream Programming Language}
+\author{Hieu Trung Luu - thl1g15 , Sam Jones - sj2g17}
+\date{May 2019}
+
+\begin{document}
+
+
+\maketitle
+
+\section{Introduction}
+YASPL is a domain specific programming language built for processing streams of integers. Programs written in YASPL take as input an arbitrary number of streams, which each contain an equal number of integers. The program will then output to stdout one or more streams which are the same length as the input streams.
+\section{Syntax}
+YASPL programs are divided into blocks. Each block is composed of the block name followed by the contents of the block enclosed in curly braces. The first block is the "start" block which is executed before the input starts being read. This is used for initialisation purposes. All subsequent blocks are named according to which lines of the input they should be executed on. They can be assigned a single line (X), an inclusive range of lines (X-Y), or a starting line (X+), in which case the block is executed on that line and all lines after that until the end of input. For example, a block named '4-6' would execute on lines 4, 5 and 6, and a block named '7+' would execute on line 7 and then on every line until after that. It is important to note that line numbering starts at 0. For a simple program in which the same code should be executed on every line, the only block necessary would be '0+'.
+\\
+Each block contains some number of lines of code, with each line being either an assignment/reassignment of a variable or a return statement, and ending in a semicolon. Before I talk about the structure of these, I will explain what makes a valid expression in YASPL as these are the core building blocks of the language.
+\\
+Expressions in YASPL closely resemble Haskell syntax. The following is a list of valid types of expression:
+\begin{itemize}
+    \item Integer - A primitive integer
+    \item Boolean - 'true' or 'false'
+    \item Variable reference - A variable name evaluates to the value of that variable so long as the variable has been assigned.
+    \item Arithmetic - Basic arithmetic expressions using the operators +, -, *, /, \% (modulo), \textasciicircum (exponent)
+    \item Comparison - Comparison of integers using operators <, >, <=, >=, ==, !=
+    \item Boolean logic - A Boolean logic expression using operators \&\& (and), || (or)
+    \item Pair - A pair of expressions in the form (A, B) where A and B are 2 expressions of any type.
+    \item List - A list of expressions in the form [e1, e2.. en] where e1-en are expressions of the same type.
+    \item Lambda Abstraction - A lambda calculus abstraction, where lambda is replaced with '\textbackslash' and a type must be declared. The general form is \textbackslash(x : T) -> E, where x is new variable name, T is a type and E is an expression. This is essentially a function which takes an argument of type T and returns the expression E. We will refer to lambda abstractions as functions.
+    \item Function application - A function followed by one or more arguments, separated by spaces, such as 'f x', where f is a variable defined to be a function and x is some expression.
+    \item List constructor - Adds an element to the head of a list. Has the form 'e:L', where e is an element and L is a list.
+    \item List append - Appends one list to the end of another, has the form 'L1++L2' where L1 and L2 are lists.
+    \item If statement - Basic conditional expression, has the form 'if B then e1 else e2', where B is a boolean expression and e1 and e2 are some other expressions of the same type. Evaluates to e1 if B is true, or e2 otherwise.
+    \item Ident - This is how the input streams are accessed. During any block other than start, the program will have one line of the input loaded. If this is line 0, then this corresponds to element 0 of each of the input streams, likewise for other lines. An ident, written '\$X' where X is a natural number, references the currently loaded element in input stream X. 
+    \item List comprehension - Iteratively compiles a list based on predicates. Written as '\{ E | p1, p2.. pn \}', where p1-pn are predicates, which I will explain shortly, and E is an expression which represents what will be added to the list. A predicate can either be a membership declaration or a property. A membership declaration looks like 'x <- L' where x is a new variable name and L is a list. List L will be iterated over, and at each iteration x will reference the current element. A property is any boolean expression, and only on iterations where this holds property holds will the expression E be added to the list. One example usage of list comprehension would be '{x | x<-l, x>5}'. This would evaluate to the list of all elements in l which are greater than 5. Another would be '{x*2 | x <- l}', which would be the list of every element in l doubled.
+\end{itemize}
+\\
+The return statement is responsible for output. It should be followed by the elements which should be added to the output streams, separated by spaces. For example, to output variable X in output stream 1 and variable Y in output stream 2, one would write 'return X Y'. The start block cannot contain a return statement, as there can only be output when there is input. Every other block must contain exactly one return statement. and all return statements in a program must be given the same number of arguments. The arguments of a return statement do not have to be variables, they can be any valid expression. For example, 'return X*2' is perfectly valid.
+\\
+Assignments and reassignments are where most of the logic in a YASPL program takes places. A basic assignment is a variable name. followed by '=', followed by some expression. For example, "x = 10". This assigns the value of 10 to the variable x. If x had been assigned previously, then it is reassigned. Once assigned, a variable can be used in any expression. Aside from =, there are other reassignment operators available for utility. These include +=, -=, *= and /=. These are fairly standard operators which should be familiar from other languages. For reference, 'x += 1' is equivalent to 'x = x + 1', and the other operators mentioned work similarly. 
+
+\section{Additional Features}
+\subsection{Type system}
+YASPL has two primitive data types, Int and Bool, as well as two data structures, List and Pair. Lists contain any number of elements of the same type, and Pairs contain exactly two elements of potentially different types. These structures can be nested, for example a List of Pairs of Lists of Ints is valid.
+\\
+In addition to these, functional types (e.g. Int -> Bool, a function from Int to Bool) are supported, and is the type a variable will have if it is assigned a lambda abstraction. Variables used on the left hand side of a function application must have a functional type, and the arguments must be of the type accepted by that function.
+\\
+A type checker is built into the interpreter, which will not allow a program to execute if it contains type errors. This throws reasonably informative errors, such as 'Error: Int '+' Bool is not defined'. 
+\subsection{Library Functions}
+There are a number of predefined haskell-like functions built into the YASPL interpreter. These are common functions for dealing with lists and pairs, and can serve as building blocks for writing more complex functions using lambda abstraction. The functions built in to the language are:
+\begin{itemize}
+    \item zip - Combines two lists into a list of pairs
+    \item reverse - Reverse a list
+    \item head - Take the first element of a list
+    \item tail - Take all but the first element of a list
+    \item last - Take the last element of a list
+    \item init - Take all but the last element of a list
+    \item fst - Take the first element of a pair
+    \item snd - Take the second element of a pair
+    \item sum - Calculate the sum of all elements in a list
+    \item product - Calculate the product of all elements in a list
+    \item length - Take the number of elements in a list
+    \item elem - Return true if an element is in a list, or false otherwise
+    \item take - Take a specified number of elements from a list
+    \item drop - Drop a specified number of elements from the start of a list.
+\end{itemize}
+\subsection{User experience}
+Single line comments are supported by writing '//' at the start of the line. Nothing on this line will be processed by the interpreter.
+\\
+Various types of error will be thrown to help the programmer with debugging. Type errors are thrown before program execution, and describe exactly what the type mismatch causing the problem is. Lexing and parsing errors will also be thrown if there are syntax problems, and these give a description of the error and the location of it in the code.
+\\
+There are various mechanisms in YASPL which help keep programs concise. These the useful reassignment operators +=, -=, *= and /=; library functions which would otherwise need to be re-declared in many programs; syntactic sugar which allows a list to be written as [1, 2, 3] as opposed to 1:2:3:[]; and list comprehension, which is extremely useful in a wide range of scenarios. 
+\\
+
+% - functions
+% - anonymous function
+% - introduce the type system of the language (int, boolean, lambda, etc..), our type binding (dynamic binding/strong or weak ?
+% - the evaluator
+% - type checker
+% - syntax sugar in identification
+% - built in functions
+% - standard operations
+% - (did we support array ?) - or syntactic sugar for list
+% - conditional statement
+% - comments
+% - informatic parse error
+
+% • expressivity of your language (25%)
+% Demonstrate how the language is Turing complete
+% • conciseness of your programs (25%) 
+% Explain how the language takes the good thing from both functional and imperative programming
+% How can we show this in our manual ?
+
+
+\section{Example program}
+The following program takes a single input stream, and creates an output stream where each element is 1 if the corresponding input element is an even number, or 0 otherwise.
+\begin{lstlisting}
+0+{
+  out = if $0 %2 == 0 then 1 else 0;
+  return out;
+}
+\end{lstlisting}
+
+
+\end{document}
